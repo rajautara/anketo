@@ -24,29 +24,63 @@
         <p class="text-muted mb-0">Responses will appear here once people start filling out your form.</p>
     </div>
 <?php else : ?>
+    <?php
+        $truncate = static function (string $s, int $len = 48): string {
+            $s = trim(preg_replace('/\s+/', ' ', $s));
+            return mb_strlen($s) > $len ? mb_substr($s, 0, $len - 1) . '…' : $s;
+        };
+    ?>
     <div class="ak-table-card">
-        <table class="table table-hover mb-0">
-            <thead>
-                <tr>
-                    <th>Submitted at</th>
-                    <th>IP address</th>
-                    <th class="text-end">Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php foreach ($submissions as $submission) : ?>
+        <div class="table-responsive">
+            <table class="table table-hover mb-0 align-middle">
+                <thead>
                     <tr>
-                        <td class="fw-semibold"><?= esc($submission['created_at']) ?></td>
-                        <td class="text-muted"><?= esc($submission['ip_address']) ?></td>
-                        <td class="text-end">
-                            <a href="<?= site_url('forms/' . $form['id'] . '/submissions/' . $submission['id']) ?>" class="btn btn-sm btn-outline-secondary">
-                                <i class="bi bi-eye me-1"></i> View
-                            </a>
-                        </td>
+                        <th class="text-nowrap">Submitted at</th>
+                        <?php foreach ($columns as $field) : ?>
+                            <th class="text-nowrap"><?= esc($field['label']) ?></th>
+                        <?php endforeach ?>
+                        <th class="text-end">Actions</th>
                     </tr>
-                <?php endforeach ?>
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    <?php foreach ($submissions as $submission) : ?>
+                        <tr>
+                            <td class="fw-semibold text-nowrap"><?= esc($submission['created_at']) ?></td>
+
+                            <?php foreach ($columns as $field) : ?>
+                                <?php $answer = $answersById[$submission['id']][$field['field_key']] ?? null; ?>
+                                <td style="max-width: 18rem;">
+                                    <?php if ($answer === null || ($answer['value'] === null && empty($answer['file_path']))) : ?>
+                                        <span class="text-muted">&mdash;</span>
+                                    <?php elseif (! empty($answer['file_path'])) : ?>
+                                        <a href="<?= site_url('forms/' . $form['id'] . '/submissions/' . $submission['id'] . '/files/' . $answer['id']) ?>" class="d-inline-flex align-items-center gap-1 text-truncate" title="<?= esc($answer['value'] ?: 'Download file') ?>">
+                                            <i class="bi bi-paperclip"></i> <?= esc($truncate($answer['value'] ?: 'Download', 28)) ?>
+                                        </a>
+                                    <?php else : ?>
+                                        <?php
+                                            $raw = (string) $answer['value'];
+                                            if (str_starts_with(trim($raw), '[')) {
+                                                $decoded = json_decode($raw, true);
+                                                if (is_array($decoded)) {
+                                                    $raw = implode(', ', $decoded);
+                                                }
+                                            }
+                                        ?>
+                                        <span class="d-inline-block text-truncate" style="max-width: 18rem;" title="<?= esc($raw) ?>"><?= esc($truncate($raw)) ?></span>
+                                    <?php endif ?>
+                                </td>
+                            <?php endforeach ?>
+
+                            <td class="text-end">
+                                <a href="<?= site_url('forms/' . $form['id'] . '/submissions/' . $submission['id']) ?>" class="btn btn-sm btn-outline-secondary text-nowrap">
+                                    <i class="bi bi-eye me-1"></i> View
+                                </a>
+                            </td>
+                        </tr>
+                    <?php endforeach ?>
+                </tbody>
+            </table>
+        </div>
     </div>
 
     <div class="mt-3"><?= $pager->links() ?></div>

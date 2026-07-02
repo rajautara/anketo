@@ -131,6 +131,49 @@ class FormFieldController extends BaseController
         return $this->response->setJSON(['success' => true]);
     }
 
+    /**
+     * Store an image for a paragraph field's rich-text editor and return its
+     * public URL. Stored under writable/uploads (outside the webroot) and served
+     * via the public `form-image/...` route.
+     */
+    public function uploadImage(int $formId): ResponseInterface
+    {
+        $form = $this->findFormOrFail($formId);
+        $file = $this->request->getFile('image');
+
+        if ($file === null || ! $file->isValid()) {
+            return $this->response->setStatusCode(422)->setJSON(['error' => 'No valid image was uploaded.']);
+        }
+
+        if ($file->getSize() > 5 * 1024 * 1024) {
+            return $this->response->setStatusCode(422)->setJSON(['error' => 'Image must be smaller than 5 MB.']);
+        }
+
+        // Verify it is genuinely an image by reading the file header (not the
+        // client-supplied type/extension), and derive the extension from that.
+        $info = @getimagesize($file->getTempName());
+        $extByType = [
+            IMAGETYPE_JPEG => 'jpg',
+            IMAGETYPE_PNG  => 'png',
+            IMAGETYPE_GIF  => 'gif',
+            IMAGETYPE_WEBP => 'webp',
+        ];
+
+        if ($info === false || ! isset($extByType[$info[2]])) {
+            return $this->response->setStatusCode(422)->setJSON(['error' => 'Only JPG, PNG, GIF, or WebP images are allowed.']);
+        }
+
+        $directory = WRITEPATH . 'uploads/paragraph/' . $form['id'];
+        if (! is_dir($directory)) {
+            mkdir($directory, 0755, true);
+        }
+
+        $name = bin2hex(random_bytes(8)) . '.' . $extByType[$info[2]];
+        $file->move($directory, $name);
+
+        return $this->response->setJSON(['url' => site_url('form-image/' . $form['id'] . '/' . $name)]);
+    }
+
     private function findFormOrFail(int $id): array
     {
         $form = $this->formModel->find($id);

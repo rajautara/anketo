@@ -28,14 +28,32 @@ class SubmissionController extends BaseController
     {
         $form = $this->findFormOrFail($formId);
 
+        // Columns = the form's input fields (display-only types store no value).
+        $columns = array_values(array_filter(
+            $this->fieldModel->getForForm($form['id']),
+            static fn ($f) => ! in_array($f['field_type'], FormFieldModel::DISPLAY_ONLY_TYPES, true)
+        ));
+
         $submissions = $this->submissionModel
             ->where('form_id', $form['id'])
             ->orderBy('created_at', 'DESC')
             ->paginate(15);
 
+        // Answers for just this page's submissions, keyed [submissionId][fieldKey].
+        $answersById = [];
+        $submissionIds = array_column($submissions, 'id');
+        if ($submissionIds !== []) {
+            $answers = $this->submissionDataModel->whereIn('submission_id', $submissionIds)->findAll();
+            foreach ($answers as $answer) {
+                $answersById[$answer['submission_id']][$answer['field_key']] = $answer;
+            }
+        }
+
         return view('submissions/index', [
             'form'        => $form,
+            'columns'     => $columns,
             'submissions' => $submissions,
+            'answersById' => $answersById,
             'pager'       => $this->submissionModel->pager,
         ]);
     }

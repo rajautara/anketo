@@ -74,6 +74,33 @@ class PublicFormController extends BaseController
         ]);
     }
 
+    /**
+     * Publicly serve a paragraph image (embedded in a form's rich text).
+     * Files live under writable/uploads (outside the webroot); the strict name
+     * pattern + basename() prevent path traversal.
+     */
+    public function image(int $formId, string $name)
+    {
+        $name = basename($name);
+
+        if (preg_match('/^[a-f0-9]{16}\.(jpg|png|gif|webp)$/', $name) !== 1) {
+            throw new PageNotFoundException('Image not found.');
+        }
+
+        $path = WRITEPATH . 'uploads/paragraph/' . $formId . '/' . $name;
+        if (! is_file($path)) {
+            throw new PageNotFoundException('Image not found.');
+        }
+
+        $mimes = ['jpg' => 'image/jpeg', 'png' => 'image/png', 'gif' => 'image/gif', 'webp' => 'image/webp'];
+        $ext   = strtolower(pathinfo($name, PATHINFO_EXTENSION));
+
+        return $this->response
+            ->setHeader('Content-Type', $mimes[$ext] ?? 'application/octet-stream')
+            ->setHeader('Cache-Control', 'public, max-age=31536000, immutable')
+            ->setBody(file_get_contents($path));
+    }
+
     public function submit(string $token)
     {
         $form = $this->formModel->findByShareToken($token);

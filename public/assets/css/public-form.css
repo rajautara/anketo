@@ -44,6 +44,12 @@
 .ak-paragraph-body .ql-align-center { text-align: center; }
 .ak-paragraph-body .ql-align-right { text-align: right; }
 .ak-paragraph-body .ql-align-justify { text-align: justify; }
+.ak-paragraph-body img {
+    max-width: 100%;
+    height: auto;
+    border-radius: var(--ak-radius-sm);
+    margin: .35rem 0;
+}
 
 /* Appointment field → date + tappable time slots */
 .ak-appt-slots:empty { display: none; }

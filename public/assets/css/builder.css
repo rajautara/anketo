@@ -68,6 +68,39 @@
 
 .ak-canvas-hint { color: var(--ak-text-muted); }
 
+/* ---- Paragraph rich-text editor ------------------------------------------*/
+.ql-editor img { max-width: 100%; height: auto; cursor: pointer; }
+.ql-editor img:hover { outline: 2px solid rgba(var(--ak-primary-rgb), .5); outline-offset: 1px; }
+
+.ak-img-size-bar {
+    position: fixed;
+    z-index: 1080;
+    display: inline-flex;
+    align-items: center;
+    gap: .25rem;
+    padding: .3rem .4rem;
+    background: var(--ak-surface);
+    border: 1px solid var(--ak-border-strong);
+    border-radius: var(--ak-radius-sm);
+    box-shadow: var(--ak-shadow-md);
+}
+.ak-img-size-label { color: var(--ak-text-muted); font-weight: 600; font-size: .72rem; padding: 0 .25rem; text-transform: uppercase; letter-spacing: .05em; }
+.ak-img-size-bar button {
+    border: 1px solid var(--ak-border);
+    background: var(--ak-surface);
+    color: var(--ak-text);
+    border-radius: .3rem;
+    padding: .15rem .45rem;
+    font-size: .78rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+.ak-img-size-bar button:hover {
+    background: var(--ak-primary-subtle);
+    color: var(--ak-primary-subtle-text);
+    border-color: var(--ak-primary);
+}
+
 /* ---- Properties panel -----------------------------------------------------*/
 #properties-panel-empty { color: var(--ak-text-muted); font-size: .9rem; }
 #properties-form .form-label { font-size: .78rem; text-transform: uppercase; letter-spacing: .04em; color: var(--ak-text-muted); margin-bottom: .25rem; }

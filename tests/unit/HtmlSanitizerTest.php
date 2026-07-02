@@ -116,13 +116,41 @@ final class HtmlSanitizerTest extends CIUnitTestCase
         $this->assertStringContainsString('after', $out);
     }
 
-    public function testImgTagIsRemoved(): void
+    public function testKeepsImageWithSafeSrcButStripsHandlers(): void
     {
-        // img isn't on the allowlist → unwrapped (no attributes, no children) → gone,
-        // and its onerror handler cannot survive.
-        $out = $this->s->clean('<img src="x" onerror="alert(1)">safe');
+        $out = $this->s->clean('<img src="/form-image/1/abc.png" alt="pic" onerror="alert(1)">');
+        $this->assertStringContainsString('<img', $out);
+        $this->assertStringContainsString('src="/form-image/1/abc.png"', $out);
+        $this->assertStringContainsString('alt="pic"', $out);
         $this->assertStringNotContainsString('onerror', $out);
+    }
+
+    public function testDropsImageWithUnsafeSrc(): void
+    {
+        $out = $this->s->clean('<p>before</p><img src="javascript:alert(1)">');
         $this->assertStringNotContainsString('<img', $out);
-        $this->assertStringContainsString('safe', $out);
+        $this->assertStringNotContainsString('javascript', $out);
+        $this->assertStringContainsString('before', $out);
+    }
+
+    public function testKeepsHttpsImage(): void
+    {
+        $out = $this->s->clean('<img src="https://cdn.example.com/logo.png">');
+        $this->assertStringContainsString('src="https://cdn.example.com/logo.png"', $out);
+    }
+
+    public function testKeepsValidImageDimensions(): void
+    {
+        $out = $this->s->clean('<img src="/form-image/1/a.png" width="50%" height="200">');
+        $this->assertStringContainsString('width="50%"', $out);
+        $this->assertStringContainsString('height="200"', $out);
+    }
+
+    public function testStripsInvalidImageWidth(): void
+    {
+        $out = $this->s->clean('<img src="/form-image/1/a.png" width="javascript:alert(1)">');
+        $this->assertStringContainsString('<img', $out);
+        $this->assertStringNotContainsString('javascript', $out);
+        $this->assertStringNotContainsString('width=', $out);
     }
 }

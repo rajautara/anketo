@@ -10,6 +10,8 @@ service('auth')->routes($routes);
 // Public — anonymous, no login required
 $routes->get('f/(:segment)', 'PublicFormController::show/$1');
 $routes->post('f/(:segment)', 'PublicFormController::submit/$1');
+// Paragraph images are embedded in public forms, so they must be servable without login.
+$routes->get('form-image/(:num)/(:segment)', 'PublicFormController::image/$1/$2');
 
 // Authenticated
 $routes->group('', ['filter' => 'session'], static function ($routes) {
@@ -31,6 +33,7 @@ $routes->group('', ['filter' => 'session'], static function ($routes) {
     $routes->post('forms/(:num)/unpublish', 'FormController::unpublish/$1');
 
     $routes->post('forms/(:num)/fields', 'FormFieldController::store/$1');
+    $routes->post('forms/(:num)/paragraph-image', 'FormFieldController::uploadImage/$1');
     $routes->post('forms/(:num)/fields/reorder', 'FormFieldController::reorder/$1');
     $routes->put('forms/(:num)/fields/(:num)', 'FormFieldController::update/$1/$2');
     $routes->delete('forms/(:num)/fields/(:num)', 'FormFieldController::delete/$1/$2');

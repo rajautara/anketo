@@ -16,7 +16,7 @@ class HtmlSanitizer
 {
     private const ALLOWED_TAGS = [
         'p', 'br', 'strong', 'b', 'em', 'i', 'u', 's', 'strike',
-        'ol', 'ul', 'li', 'a', 'blockquote', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+        'ol', 'ul', 'li', 'a', 'blockquote', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'img',
     ];
 
     /** Removed entirely, contents included. */
@@ -91,6 +91,13 @@ class HtmlSanitizer
                     continue;
                 }
 
+                // An image with an unsafe/missing src is dropped entirely.
+                if ($tag === 'img' && ! $this->isSafeUrl($child->getAttribute('src'))) {
+                    $node->removeChild($child);
+                    $changed = true;
+                    continue;
+                }
+
                 $this->cleanAttributes($child, $tag);
             }
         }
@@ -131,6 +138,19 @@ class HtmlSanitizer
 
             if ($tag === 'a' && in_array($name, ['href', 'target', 'rel'], true)) {
                 continue; // validated below
+            }
+
+            if ($tag === 'img') {
+                if (in_array($name, ['src', 'alt'], true)) {
+                    continue; // src already validated as safe before cleaning
+                }
+                if (in_array($name, ['width', 'height'], true)) {
+                    // Keep only a plain pixel/percentage dimension (from the resize UI).
+                    if (preg_match('/^\d{1,4}(%|px)?$/', trim($attr->value)) !== 1) {
+                        $el->removeAttribute($attr->name);
+                    }
+                    continue;
+                }
             }
 
             $el->removeAttribute($attr->name);

@@ -125,7 +125,7 @@
     };
     var OPTION_TYPES = ['checkbox', 'radio', 'select'];
     var WEEKDAYS = [{ v: 1, t: 'Mon' }, { v: 2, t: 'Tue' }, { v: 3, t: 'Wed' }, { v: 4, t: 'Thu' }, { v: 5, t: 'Fri' }, { v: 6, t: 'Sat' }, { v: 7, t: 'Sun' }];
-    var PARA_TOOLBAR = [['bold', 'italic', 'underline', 'strike'], [{ header: [2, 3, false] }], [{ list: 'ordered' }, { list: 'bullet' }], [{ align: [] }], ['link'], ['clean']];
+    var PARA_TOOLBAR = [['bold', 'italic', 'underline', 'strike'], [{ header: [2, 3, false] }], [{ list: 'ordered' }, { list: 'bullet' }], [{ align: [] }], ['link', 'image'], ['clean']];
 
     // Live registry of all fields on the canvas: id -> field object.
     var FIELDS = {};
@@ -148,6 +148,8 @@
     var propertiesForm = document.getElementById('properties-form');
     var selectedId = null;
     var paraQuill = null;
+    var paraSizeBar = null;
+    var paraSizeImg = null;
 
     function apiFetch(url, options) {
         options = options || {};
@@ -246,6 +248,7 @@
     function clearProperties() {
         selectedId = null;
         paraQuill = null;
+        hideImageSizeBar();
         propertiesForm.classList.add('d-none');
         propertiesForm.innerHTML = '';
         propertiesEmpty.classList.remove('d-none');
@@ -278,6 +281,7 @@
         li.classList.add('selected');
 
         paraQuill = null;
+        hideImageSizeBar();
         var type = field.field_type;
         var isOptionType = OPTION_TYPES.indexOf(type) !== -1;
         var isParagraph = type === 'paragraph';
@@ -344,8 +348,12 @@
             edDiv.id = 'ak-para-editor';
             wrap.insertBefore(edDiv, ta);
             ta.classList.add('d-none');
-            paraQuill = new Quill(edDiv, { theme: 'snow', modules: { toolbar: PARA_TOOLBAR } });
+            paraQuill = new Quill(edDiv, {
+                theme: 'snow',
+                modules: { toolbar: { container: PARA_TOOLBAR, handlers: { image: paragraphImageHandler } } }
+            });
             if (ta.value.trim() !== '') { paraQuill.clipboard.dangerouslyPasteHTML(ta.value); }
+            setupParagraphImageResize();
         }
 
         var weekdaysBox = propertiesForm.querySelector('#appt-weekdays');
@@ -379,6 +387,113 @@
             '<div class="col-6"><label class="form-label small">Slot (min)</label><input type="number" class="form-control form-control-sm" name="appt_slot" min="5" max="480" value="' + (parseInt(cfg.slot_minutes, 10) || 30) + '"></div>' +
             '<div class="col-6"><label class="form-label small">Book within (days)</label><input type="number" class="form-control form-control-sm" name="appt_maxdays" min="1" max="365" value="' + (parseInt(cfg.date_max_days, 10) || 60) + '"></div>' +
             '</div>';
+    }
+
+    // Quill toolbar image button: upload the picked file, insert the returned URL
+    // (avoids base64-embedding, which would bloat the stored HTML).
+    function paragraphImageHandler() {
+        var input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/png,image/jpeg,image/gif,image/webp';
+        input.addEventListener('change', function () {
+            var file = input.files && input.files[0];
+            if (!file || !paraQuill) { return; }
+
+            var data = new FormData();
+            data.append('image', file);
+
+            fetch(API_BASE + '/paragraph-image', {
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': CSRF_TOKEN, 'X-Requested-With': 'XMLHttpRequest' },
+                body: data
+            }).then(function (res) {
+                if (!res.ok) {
+                    return res.json().catch(function () { return {}; }).then(function (b) { throw new Error(b.error || ('Upload failed (' + res.status + ')')); });
+                }
+                return res.json();
+            }).then(function (result) {
+                var range = paraQuill.getSelection(true);
+                paraQuill.insertEmbed(range ? range.index : paraQuill.getLength(), 'image', result.url, 'user');
+                paraQuill.setSelection((range ? range.index : paraQuill.getLength()) + 1, 0);
+            }).catch(function (err) { alert(err.message); });
+        });
+        input.click();
+    }
+
+    // Click an image in the paragraph editor to show a width picker. Widths are
+    // percentages so they scale correctly from the narrow builder to the wide
+    // public form; applied via Quill's `width` image format so getSemanticHTML
+    // persists them (and CSS max-width:100% still prevents any overflow).
+    function setupParagraphImageResize() {
+        function onEditorPress(e) {
+            var img = imgFromNode(e.target);
+            if (img) { showImageSizeBar(img); }
+            else { hideImageSizeBar(); }
+        }
+        paraQuill.root.addEventListener('click', onEditorPress);
+        paraQuill.root.addEventListener('mouseup', onEditorPress);
+    }
+
+    // Resolve the <img> from a clicked node whether it is the image itself,
+    // an ancestor, or a wrapper containing it.
+    function imgFromNode(node) {
+        if (!node || node.nodeType !== 1) { return null; }
+        if (node.tagName === 'IMG') { return node; }
+        var up = node.closest ? node.closest('img') : null;
+        if (up) { return up; }
+        return node.querySelector ? node.querySelector('img') : null;
+    }
+
+    function showImageSizeBar(img) {
+        hideImageSizeBar();
+        paraSizeImg = img;
+
+        var bar = document.createElement('div');
+        bar.className = 'ak-img-size-bar';
+
+        var label = document.createElement('span');
+        label.className = 'ak-img-size-label';
+        label.textContent = 'Width';
+        bar.appendChild(label);
+
+        ['25%', '50%', '75%', '100%'].forEach(function (w) {
+            var b = document.createElement('button');
+            b.type = 'button';
+            b.textContent = w;
+            b.addEventListener('mousedown', function (ev) {
+                ev.preventDefault(); // keep the editor's image selection
+                applyImageWidth(img, w);
+                hideImageSizeBar();
+            });
+            bar.appendChild(b);
+        });
+
+        document.body.appendChild(bar);
+        paraSizeBar = bar;
+
+        // Fixed positioning (viewport coords) — avoids overflow/containing-block
+        // clipping from the properties panel.
+        var r = img.getBoundingClientRect();
+        var top = r.bottom + 6;
+        var left = Math.max(8, r.left);
+        bar.style.top = top + 'px';
+        bar.style.left = left + 'px';
+    }
+
+    function hideImageSizeBar() {
+        if (paraSizeBar && paraSizeBar.parentNode) { paraSizeBar.parentNode.removeChild(paraSizeBar); }
+        paraSizeBar = null;
+        paraSizeImg = null;
+    }
+
+    function applyImageWidth(img, width) {
+        if (!paraQuill) { return; }
+        var blot = (window.Quill && Quill.find) ? Quill.find(img) : null;
+        if (blot && typeof paraQuill.getIndex === 'function') {
+            paraQuill.formatText(paraQuill.getIndex(blot), 1, 'width', width, 'user');
+        } else {
+            img.setAttribute('width', width);
+        }
     }
 
     function saveField(field, li) {
@@ -486,6 +601,14 @@
             });
         });
     }
+
+    // Dismiss the image size bar when clicking away or scrolling.
+    document.addEventListener('mousedown', function (e) {
+        if (paraSizeBar && !paraSizeBar.contains(e.target) && !(e.target && e.target.tagName === 'IMG')) {
+            hideImageSizeBar();
+        }
+    }, true);
+    window.addEventListener('scroll', function () { hideImageSizeBar(); }, true);
 
     renderInitial();
 })();
