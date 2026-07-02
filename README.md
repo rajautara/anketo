@@ -44,7 +44,7 @@ A JotForm-like drag & drop form builder built with CodeIgniter 4, MySQL, and Boo
 
 3. **Configure environment**
    ```bash
-   cp env .env
+   cp env.sample .env
    ```
    Edit `.env` file and update database credentials:
    ```
@@ -229,7 +229,7 @@ rm -rf writable/uploads/*
 rm -rf writable/session/*
 
 # Create production .env file
-cp env .env
+cp env.sample .env
 ```
 
 Edit `.env` for production:
