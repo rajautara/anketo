@@ -1,61 +1,74 @@
-# CodeIgniter 4 Framework
+# Anketo
 
-## What is CodeIgniter?
+A JotForm-style drag-and-drop form builder built with CodeIgniter 4, MySQL, and Bootstrap 5.
 
-CodeIgniter is a PHP full-stack web framework that is light, fast, flexible and secure.
-More information can be found at the [official site](https://codeigniter.com).
+## Features
 
-This repository holds the distributable version of the framework.
-It has been built from the
-[development repository](https://github.com/codeigniter4/CodeIgniter4).
+- Drag-and-drop form builder (Bootstrap 5 + SortableJS) — 9 field types: text, email, number, textarea, checkbox, radio, select, date, file upload.
+- Public, shareable form links — anyone can fill in a published form without registering or logging in.
+- Admin / user roles via [CodeIgniter Shield](https://github.com/codeigniter4/shield): users manage their own forms, admins can see and manage everything and promote/demote other users.
+- Submission list, per-submission detail view, uploaded file downloads, and CSV export.
 
-More information about the plans for version 4 can be found in [CodeIgniter 4](https://forum.codeigniter.com/forumdisplay.php?fid=28) on the forums.
+Not in this version (planned for later): conditional field logic, custom form themes, email notifications on submission, a full REST API.
 
-You can read the [user guide](https://codeigniter.com/user_guide/)
-corresponding to the latest version of the framework.
+## Requirements
 
-## Important Change with index.php
+- PHP 8.2+
+- Composer
+- MySQL 8+ (or MariaDB)
 
-`index.php` is no longer in the root of the project! It has been moved inside the *public* folder,
-for better security and separation of components.
+## Setup
 
-This means that you should configure your web server to "point" to your project's *public* folder, and
-not to the project root. A better practice would be to configure a virtual host to point there. A poor practice would be to point your web server to the project root and expect to enter *public/...*, as the rest of your logic and the
-framework are exposed.
+```bash
+composer install
+cp env .env
+```
 
-**Please** read the user guide for a better explanation of how CI4 works!
+Edit `.env`:
 
-## Repository Management
+```ini
+CI_ENVIRONMENT = development
+app.baseURL = 'http://localhost:8080/'
 
-We use GitHub issues, in our main repository, to track **BUGS** and to track approved **DEVELOPMENT** work packages.
-We use our [forum](http://forum.codeigniter.com) to provide SUPPORT and to discuss
-FEATURE REQUESTS.
+database.default.hostname = localhost
+database.default.database = anketo
+database.default.username = your_db_user
+database.default.password = your_db_password
+database.default.DBDriver = MySQLi
+```
 
-This repository is a "distribution" one, built by our release preparation script.
-Problems with it can be raised on our forum, or as issues in the main repository.
+Create the database, then run migrations (this also creates Shield's own auth tables — no separate step needed):
 
-## Contributing
+```bash
+php spark migrate --all
+```
 
-We welcome contributions from the community.
+Generate an encryption key if `.env` doesn't already have one:
 
-Please read the [*Contributing to CodeIgniter*](https://github.com/codeigniter4/CodeIgniter4/blob/develop/CONTRIBUTING.md) section in the development repository.
+```bash
+php spark key:generate
+```
 
-## Server Requirements
+Start the dev server:
 
-PHP version 8.2 or higher is required, with the following extensions installed:
+```bash
+php spark serve
+```
 
-- [intl](http://php.net/manual/en/intl.requirements.php)
-- [mbstring](http://php.net/manual/en/mbstring.installation.php)
+### Create the first admin
 
-> [!WARNING]
-> - The end of life date for PHP 7.4 was November 28, 2022.
-> - The end of life date for PHP 8.0 was November 26, 2023.
-> - The end of life date for PHP 8.1 was December 31, 2025.
-> - If you are still using below PHP 8.2, you should upgrade immediately.
-> - The end of life date for PHP 8.2 will be December 31, 2026.
+Registration (`/register`) always creates a plain `user`. To promote yourself to `admin`, register a normal account first, then run:
 
-Additionally, make sure that the following extensions are enabled in your PHP:
+```bash
+php spark shield:user addgroup -e your@email.com -g admin
+```
 
-- json (enabled by default - don't turn it off)
-- [mysqlnd](http://php.net/manual/en/mysqlnd.install.php) if you plan to use MySQL
-- [libcurl](http://php.net/manual/en/curl.requirements.php) if you plan to use the HTTP\CURLRequest library
+## Project structure notes
+
+- `system/` is **not** committed to this repo — the framework and Shield are installed via Composer into `vendor/`, same as any standard CodeIgniter 4 project. Run `composer install` before anything else will work.
+- Domain tables (`forms`, `form_fields`, `form_submissions`, `submission_data`) are separate from Shield's own auth tables (`users`, `auth_identities`, `auth_groups_users`, etc.) — see `app/Database/Migrations/`.
+- Uploaded files are stored under `writable/uploads/forms/{form_id}/` (outside the public webroot) and served through an ownership-checked download route, not linked directly.
+
+## Deployment
+
+Standard CodeIgniter 4 deployment: only `public/` should be web-accessible; `app/`, `vendor/`, and `.env` should sit outside the public webroot. Run `composer install --no-dev` and `php spark migrate --all` as part of your deploy step (locally or in CI), then upload the resulting `vendor/` folder along with the rest of the project — no Composer or SSH access is required on the server itself.

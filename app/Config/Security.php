@@ -15,7 +15,7 @@ class Security extends BaseConfig
      *
      * @var string 'cookie' or 'session'
      */
-    public string $csrfProtection = 'cookie';
+    public string $csrfProtection = 'session';
 
     /**
      * --------------------------------------------------------------------------
@@ -70,8 +70,13 @@ class Security extends BaseConfig
      * --------------------------------------------------------------------------
      *
      * Regenerate CSRF Token on every submission.
+     *
+     * Kept false: the drag-drop form builder fires many sequential AJAX
+     * requests (add/edit/reorder/delete field) against the single token
+     * emitted in the page's <meta> tag, with no full reload between them.
+     * The token still rotates per-session (e.g. on login/logout).
      */
-    public bool $regenerate = true;
+    public bool $regenerate = false;
 
     /**
      * --------------------------------------------------------------------------

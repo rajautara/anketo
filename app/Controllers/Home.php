@@ -4,8 +4,12 @@ namespace App\Controllers;
 
 class Home extends BaseController
 {
-    public function index(): string
+    public function index()
     {
-        return view('welcome_message');
+        if (auth()->loggedIn()) {
+            return redirect()->to('/dashboard');
+        }
+
+        return redirect()->to('/login');
     }
 }

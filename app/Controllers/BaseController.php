@@ -3,6 +3,7 @@
 namespace App\Controllers;
 
 use CodeIgniter\Controller;
+use CodeIgniter\Exceptions\PageNotFoundException;
 use CodeIgniter\HTTP\RequestInterface;
 use CodeIgniter\HTTP\ResponseInterface;
 use Psr\Log\LoggerInterface;
@@ -20,26 +21,35 @@ use Psr\Log\LoggerInterface;
  */
 abstract class BaseController extends Controller
 {
-    /**
-     * Be sure to declare properties for any property fetch you initialized.
-     * The creation of dynamic property is deprecated in PHP 8.2.
-     */
-
-    // protected $session;
+    protected $helpers = ['form', 'url', 'auth', 'form_field'];
 
     /**
      * @return void
      */
     public function initController(RequestInterface $request, ResponseInterface $response, LoggerInterface $logger)
     {
-        // Load here all helpers you want to be available in your controllers that extend BaseController.
-        // Caution: Do not put the this below the parent::initController() call below.
-        // $this->helpers = ['form', 'url'];
-
-        // Caution: Do not edit this line.
         parent::initController($request, $response, $logger);
+    }
 
-        // Preload any models, libraries, etc, here.
-        // $this->session = service('session');
+    protected function currentUserId(): int
+    {
+        return (int) auth()->id();
+    }
+
+    protected function isAdmin(): bool
+    {
+        return auth()->user()->inGroup('admin');
+    }
+
+    /**
+     * Aborts with a 404 (rather than 403, to avoid revealing that a form
+     * belonging to someone else exists) unless the given form is owned by
+     * the current user or the current user is an admin.
+     */
+    protected function ensureFormAccess(array $form): void
+    {
+        if (! $this->isAdmin() && (int) $form['user_id'] !== $this->currentUserId()) {
+            throw new PageNotFoundException('Form not found.');
+        }
     }
 }
