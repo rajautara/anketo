@@ -67,3 +67,20 @@
 #--------------------------------------------------------------------
 
 # logger.threshold = 4
+
+#--------------------------------------------------------------------
+# EMAIL (SMTP) — required for submission notifications
+#--------------------------------------------------------------------
+# Leave these commented to fall back to PHP mail() (Config\Email defaults).
+# For reliable delivery, use SMTP with a mailbox on your sending domain.
+# On cPanel: create a mailbox, then use SMTPHost = mail.yourdomain.com,
+# port 465 + SMTPCrypto = ssl (or 587 + tls).
+
+# email.protocol = smtp
+# email.SMTPHost = mail.yourdomain.com
+# email.SMTPUser = notifications@yourdomain.com
+# email.SMTPPass = 'your-mailbox-password'
+# email.SMTPPort = 465
+# email.SMTPCrypto = ssl
+# email.fromEmail = notifications@yourdomain.com
+# email.fromName = 'Anketo'

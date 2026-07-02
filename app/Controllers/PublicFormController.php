@@ -2,6 +2,7 @@
 
 namespace App\Controllers;
 
+use App\Libraries\SubmissionNotifier;
 use App\Models\FormFieldModel;
 use App\Models\FormModel;
 use App\Models\FormSubmissionModel;
@@ -110,6 +111,10 @@ class PublicFormController extends BaseController
         $this->submissionDataModel->saveAnswers($submissionId, $toSave);
 
         $db->transComplete();
+
+        if ($db->transStatus() !== false) {
+            (new SubmissionNotifier())->notify($form, (int) $submissionId, $toSave);
+        }
 
         session()->setFlashdata('submitted', true);
 

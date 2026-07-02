@@ -57,19 +57,25 @@ class FormController extends BaseController
         $form = $this->findFormOrFail($id);
 
         if (! $this->validate([
-            'title'               => 'required|max_length[255]',
-            'description'         => 'permit_empty|max_length[2000]',
-            'submit_button_text'  => 'permit_empty|max_length[100]',
-            'success_message'     => 'permit_empty|max_length[2000]',
+            'title'                => 'required|max_length[255]',
+            'description'          => 'permit_empty|max_length[2000]',
+            'submit_button_text'   => 'permit_empty|max_length[100]',
+            'success_message'      => 'permit_empty|max_length[2000]',
+            'notify_on_submission' => 'permit_empty|in_list[0,1]',
+            'notification_email'   => 'permit_empty|valid_email|max_length[255]',
         ])) {
             return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
         }
 
+        $notificationEmail = trim((string) $this->request->getPost('notification_email'));
+
         $this->formModel->update($form['id'], [
-            'title'              => $this->request->getPost('title'),
-            'description'        => $this->request->getPost('description'),
-            'submit_button_text' => $this->request->getPost('submit_button_text'),
-            'success_message'    => $this->request->getPost('success_message'),
+            'title'                => $this->request->getPost('title'),
+            'description'          => $this->request->getPost('description'),
+            'submit_button_text'   => $this->request->getPost('submit_button_text'),
+            'success_message'      => $this->request->getPost('success_message'),
+            'notify_on_submission' => $this->request->getPost('notify_on_submission') ? 1 : 0,
+            'notification_email'   => $notificationEmail !== '' ? $notificationEmail : null,
         ]);
 
         return redirect()->to('/dashboard')->with('message', 'Form updated.');

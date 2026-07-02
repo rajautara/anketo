@@ -8,8 +8,9 @@ A JotForm-style drag-and-drop form builder built with CodeIgniter 4, MySQL, and 
 - Public, shareable form links — anyone can fill in a published form without registering or logging in.
 - Admin / user roles via [CodeIgniter Shield](https://github.com/codeigniter4/shield): users manage their own forms, admins can see and manage everything and promote/demote other users.
 - Submission list, per-submission detail view, uploaded file downloads, and CSV export.
+- Optional email notification to the form owner (or a custom address) whenever a form receives a submission — configured per form under **Form settings**. Requires SMTP (see [Email notifications](#email-notifications-smtp) below).
 
-Not in this version (planned for later): conditional field logic, custom form themes, email notifications on submission, a full REST API.
+Not in this version (planned for later): conditional field logic, custom form themes, a full REST API.
 
 ## Requirements
 
@@ -62,6 +63,32 @@ Registration (`/register`) always creates a plain `user`. To promote yourself to
 ```bash
 php spark shield:user addgroup -e your@email.com -g admin
 ```
+
+## Email notifications (SMTP)
+
+Each form has a **Notify me when someone submits this form** toggle under **Form settings** (with an optional override recipient — leave it blank to use the form owner's account email). When enabled, a submission triggers an HTML email summarising the answers with a link to the submission detail page.
+
+Sending is best-effort and fully isolated from the public submission flow: if SMTP is down or misconfigured, the submitter still sees the thank-you page, the response is still saved, and the failure is logged to `writable/logs/`.
+
+To enable delivery, configure SMTP in `.env` (the `env` template lists these under `EMAIL`):
+
+```ini
+email.protocol = smtp
+email.SMTPHost = mail.yourdomain.com
+email.SMTPUser = notifications@yourdomain.com
+email.SMTPPass = 'your-mailbox-password'
+email.SMTPPort = 465          # 465 -> SMTPCrypto ssl; 587 -> tls
+email.SMTPCrypto = ssl
+email.fromEmail = notifications@yourdomain.com
+email.fromName = 'Anketo'
+```
+
+Notes:
+- `fromEmail` should be an address on your sending domain so SPF/DKIM pass and mail isn't flagged as spam.
+- On **cPanel shared hosting**, create a mailbox under **Email Accounts**, then use `SMTPHost = mail.yourdomain.com` with port `465`/`ssl` (or `587`/`tls`).
+- Uploaded files are **not attached** — the email shows the filename and links to the submission, where the owner downloads through the access-controlled route.
+- Notification links use `app.baseURL`, so make sure it's set correctly in `.env`.
+- Leaving `email.protocol = mail` (the default) uses PHP `mail()`, which works on some hosts but is less reliable than SMTP.
 
 ## Project structure notes
 

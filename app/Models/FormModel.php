@@ -20,6 +20,8 @@ class FormModel extends Model
         'status',
         'submit_button_text',
         'success_message',
+        'notify_on_submission',
+        'notification_email',
     ];
 
     protected $useTimestamps = true;
@@ -27,6 +29,10 @@ class FormModel extends Model
     protected $createdField  = 'created_at';
     protected $updatedField  = 'updated_at';
     protected $deletedField  = 'deleted_at';
+
+    protected array $casts = [
+        'notify_on_submission' => 'boolean',
+    ];
 
     protected $validationRules = [
         'title'  => 'required|max_length[255]',
