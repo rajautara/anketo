@@ -1,0 +1,552 @@
+/* ==========================================================================
+   Anketo — Design System (Indigo SaaS)
+   A theme layer on top of Bootstrap 5.3. Light + dark via [data-bs-theme].
+   Single source of truth for colors, typography, radius, shadows.
+   ========================================================================== */
+
+/* ---------- Tokens: Light (default) ---------------------------------------- */
+:root,
+[data-bs-theme="light"] {
+    /* Brand */
+    --ak-primary: #6366f1;
+    --ak-primary-hover: #4f46e5;
+    --ak-primary-active: #4338ca;
+    --ak-primary-rgb: 99, 102, 241;
+    --ak-primary-subtle: #eef2ff;
+    --ak-primary-subtle-text: #4338ca;
+    --ak-on-primary: #ffffff;
+
+    /* Neutrals / surfaces */
+    --ak-bg: #f7f8fc;
+    --ak-bg-accent: #eef1fb;
+    --ak-surface: #ffffff;
+    --ak-surface-2: #f1f5f9;
+    --ak-surface-hover: #f8fafc;
+    --ak-border: #e6e8f0;
+    --ak-border-strong: #cbd5e1;
+
+    /* Text */
+    --ak-text: #0f172a;
+    --ak-text-muted: #64748b;
+    --ak-heading: #0b1220;
+
+    /* Status */
+    --ak-success: #10b981;
+    --ak-success-rgb: 16, 185, 129;
+    --ak-warning: #f59e0b;
+    --ak-warning-rgb: 245, 158, 11;
+    --ak-danger: #ef4444;
+    --ak-danger-rgb: 239, 68, 68;
+
+    /* Radius */
+    --ak-radius-sm: .5rem;
+    --ak-radius: .75rem;
+    --ak-radius-lg: 1rem;
+    --ak-radius-xl: 1.25rem;
+
+    /* Shadows */
+    --ak-shadow-xs: 0 1px 2px rgba(15, 23, 42, .05);
+    --ak-shadow-sm: 0 1px 3px rgba(15, 23, 42, .08), 0 1px 2px rgba(15, 23, 42, .04);
+    --ak-shadow-md: 0 6px 16px rgba(15, 23, 42, .08);
+    --ak-shadow-lg: 0 16px 40px rgba(15, 23, 42, .14);
+    --ak-ring: 0 0 0 .2rem rgba(var(--ak-primary-rgb), .25);
+
+    /* ---- Bootstrap variable overrides (light) ---- */
+    --bs-font-sans-serif: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --bs-body-bg: var(--ak-bg);
+    --bs-body-color: var(--ak-text);
+    --bs-secondary-color: var(--ak-text-muted);
+    --bs-tertiary-bg: var(--ak-surface-2);
+    --bs-border-color: var(--ak-border);
+    --bs-border-radius: var(--ak-radius);
+    --bs-border-radius-sm: var(--ak-radius-sm);
+    --bs-border-radius-lg: var(--ak-radius-lg);
+    --bs-primary: var(--ak-primary);
+    --bs-primary-rgb: var(--ak-primary-rgb);
+    --bs-success-rgb: var(--ak-success-rgb);
+    --bs-warning-rgb: var(--ak-warning-rgb);
+    --bs-danger-rgb: var(--ak-danger-rgb);
+    --bs-link-color: var(--ak-primary);
+    --bs-link-color-rgb: var(--ak-primary-rgb);
+    --bs-link-hover-color: var(--ak-primary-hover);
+    --bs-emphasis-color: var(--ak-heading);
+    --bs-heading-color: var(--ak-heading);
+}
+
+/* ---------- Tokens: Dark ---------------------------------------------------- */
+[data-bs-theme="dark"] {
+    --ak-primary: #6366f1;
+    --ak-primary-hover: #818cf8;
+    --ak-primary-active: #a5b4fc;
+    --ak-primary-rgb: 129, 140, 248;
+    --ak-primary-subtle: rgba(99, 102, 241, .16);
+    --ak-primary-subtle-text: #c7d2fe;
+    --ak-on-primary: #ffffff;
+
+    --ak-bg: #0a0f1e;
+    --ak-bg-accent: #111a30;
+    --ak-surface: #131c31;
+    --ak-surface-2: #1c2740;
+    --ak-surface-hover: #1a2338;
+    --ak-border: #263251;
+    --ak-border-strong: #35476b;
+
+    --ak-text: #e6ebf5;
+    --ak-text-muted: #93a1bd;
+    --ak-heading: #f4f7fc;
+
+    --ak-shadow-xs: 0 1px 2px rgba(0, 0, 0, .4);
+    --ak-shadow-sm: 0 1px 3px rgba(0, 0, 0, .5);
+    --ak-shadow-md: 0 8px 24px rgba(0, 0, 0, .5);
+    --ak-shadow-lg: 0 20px 48px rgba(0, 0, 0, .6);
+
+    --bs-body-bg: var(--ak-bg);
+    --bs-body-color: var(--ak-text);
+    --bs-secondary-color: var(--ak-text-muted);
+    --bs-tertiary-bg: var(--ak-surface-2);
+    --bs-border-color: var(--ak-border);
+    --bs-primary: var(--ak-primary);
+    --bs-primary-rgb: var(--ak-primary-rgb);
+    --bs-link-color: var(--ak-primary-hover);
+    --bs-link-color-rgb: var(--ak-primary-rgb);
+    --bs-link-hover-color: var(--ak-primary-active);
+    --bs-emphasis-color: var(--ak-heading);
+    --bs-heading-color: var(--ak-heading);
+}
+
+/* ---------- Base elements -------------------------------------------------- */
+body {
+    background-color: var(--ak-bg);
+    color: var(--ak-text);
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    letter-spacing: -0.006em;
+}
+
+h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
+    color: var(--ak-heading);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+}
+
+a {
+    text-decoration-thickness: 1px;
+    text-underline-offset: 2px;
+}
+
+.text-muted {
+    color: var(--ak-text-muted) !important;
+}
+
+hr {
+    border-color: var(--ak-border);
+    opacity: 1;
+}
+
+::selection {
+    background: rgba(var(--ak-primary-rgb), .22);
+}
+
+/* Focus visibility */
+:focus-visible {
+    outline: 2px solid var(--ak-primary);
+    outline-offset: 2px;
+}
+
+/* ---------- Buttons -------------------------------------------------------- */
+.btn {
+    --bs-btn-font-weight: 600;
+    --bs-btn-border-radius: var(--ak-radius-sm);
+    --bs-btn-padding-y: .5rem;
+    --bs-btn-padding-x: 1rem;
+    transition: background-color .15s ease, border-color .15s ease, box-shadow .15s ease, color .15s ease, transform .05s ease;
+}
+.btn:active { transform: translateY(1px); }
+.btn-sm { --bs-btn-border-radius: var(--ak-radius-sm); }
+.btn-lg { --bs-btn-border-radius: var(--ak-radius); --bs-btn-padding-x: 1.5rem; }
+
+.btn-primary {
+    --bs-btn-color: var(--ak-on-primary);
+    --bs-btn-bg: var(--ak-primary);
+    --bs-btn-border-color: var(--ak-primary);
+    --bs-btn-hover-color: var(--ak-on-primary);
+    --bs-btn-hover-bg: var(--ak-primary-hover);
+    --bs-btn-hover-border-color: var(--ak-primary-hover);
+    --bs-btn-active-color: var(--ak-on-primary);
+    --bs-btn-active-bg: var(--ak-primary-active);
+    --bs-btn-active-border-color: var(--ak-primary-active);
+    --bs-btn-disabled-color: var(--ak-on-primary);
+    --bs-btn-disabled-bg: var(--ak-primary);
+    --bs-btn-disabled-border-color: var(--ak-primary);
+    --bs-btn-focus-shadow-rgb: var(--ak-primary-rgb);
+    box-shadow: 0 1px 2px rgba(var(--ak-primary-rgb), .35);
+}
+
+.btn-outline-primary {
+    --bs-btn-color: var(--ak-primary);
+    --bs-btn-border-color: var(--ak-border-strong);
+    --bs-btn-hover-color: var(--ak-on-primary);
+    --bs-btn-hover-bg: var(--ak-primary);
+    --bs-btn-hover-border-color: var(--ak-primary);
+    --bs-btn-active-color: var(--ak-on-primary);
+    --bs-btn-active-bg: var(--ak-primary-active);
+    --bs-btn-active-border-color: var(--ak-primary-active);
+    --bs-btn-focus-shadow-rgb: var(--ak-primary-rgb);
+}
+
+.btn-success {
+    --bs-btn-bg: var(--ak-success);
+    --bs-btn-border-color: var(--ak-success);
+    --bs-btn-hover-bg: #0ea472;
+    --bs-btn-hover-border-color: #0ea472;
+    --bs-btn-active-bg: #0b8f63;
+    --bs-btn-active-border-color: #0b8f63;
+    --bs-btn-disabled-bg: var(--ak-success);
+    --bs-btn-disabled-border-color: var(--ak-success);
+    --bs-btn-color: #fff;
+    --bs-btn-hover-color: #fff;
+    --bs-btn-focus-shadow-rgb: var(--ak-success-rgb);
+}
+
+/* Neutral secondary / outline buttons that read well in both themes */
+.btn-outline-secondary {
+    --bs-btn-color: var(--ak-text);
+    --bs-btn-border-color: var(--ak-border-strong);
+    --bs-btn-hover-color: var(--ak-text);
+    --bs-btn-hover-bg: var(--ak-surface-2);
+    --bs-btn-hover-border-color: var(--ak-border-strong);
+    --bs-btn-active-bg: var(--ak-surface-2);
+    --bs-btn-active-color: var(--ak-text);
+    --bs-btn-active-border-color: var(--ak-border-strong);
+}
+.btn-outline-danger {
+    --bs-btn-color: var(--ak-danger);
+    --bs-btn-border-color: var(--ak-border-strong);
+    --bs-btn-hover-bg: var(--ak-danger);
+    --bs-btn-hover-border-color: var(--ak-danger);
+    --bs-btn-active-bg: var(--ak-danger);
+    --bs-btn-focus-shadow-rgb: var(--ak-danger-rgb);
+}
+.btn-outline-warning {
+    --bs-btn-color: var(--ak-warning);
+    --bs-btn-border-color: var(--ak-border-strong);
+    --bs-btn-hover-color: #1a1205;
+    --bs-btn-hover-bg: var(--ak-warning);
+    --bs-btn-hover-border-color: var(--ak-warning);
+}
+
+/* Subtle "ghost" icon button */
+.ak-btn-ghost {
+    --bs-btn-color: var(--ak-text-muted);
+    --bs-btn-bg: transparent;
+    --bs-btn-border-color: transparent;
+    --bs-btn-hover-color: var(--ak-text);
+    --bs-btn-hover-bg: var(--ak-surface-2);
+    --bs-btn-hover-border-color: transparent;
+    --bs-btn-active-bg: var(--ak-surface-2);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* ---------- Cards ---------------------------------------------------------- */
+.card {
+    --bs-card-bg: var(--ak-surface);
+    --bs-card-border-color: var(--ak-border);
+    --bs-card-cap-bg: var(--ak-surface);
+    --bs-card-border-radius: var(--ak-radius-lg);
+    --bs-card-inner-border-radius: calc(var(--ak-radius-lg) - 1px);
+    box-shadow: var(--ak-shadow-sm);
+}
+.card-header {
+    border-bottom-color: var(--ak-border);
+    font-weight: 600;
+    color: var(--ak-heading);
+}
+
+/* ---------- Forms ---------------------------------------------------------- */
+.form-label { font-weight: 600; color: var(--ak-text); margin-bottom: .4rem; }
+.col-form-label { color: var(--ak-text); }
+.form-text { color: var(--ak-text-muted); }
+
+.form-control,
+.form-select {
+    background-color: var(--ak-surface);
+    border-color: var(--ak-border-strong);
+    color: var(--ak-text);
+    border-radius: var(--ak-radius-sm);
+    padding: .55rem .8rem;
+    transition: border-color .15s ease, box-shadow .15s ease, background-color .15s ease;
+}
+.form-control::placeholder { color: var(--ak-text-muted); opacity: .8; }
+.form-control:focus,
+.form-select:focus {
+    background-color: var(--ak-surface);
+    border-color: var(--ak-primary);
+    box-shadow: var(--ak-ring);
+    color: var(--ak-text);
+}
+.form-control-sm, .form-select-sm { border-radius: var(--ak-radius-sm); padding: .35rem .6rem; }
+
+.form-check-input {
+    border-color: var(--ak-border-strong);
+    background-color: var(--ak-surface);
+}
+.form-check-input:checked {
+    background-color: var(--ak-primary);
+    border-color: var(--ak-primary);
+}
+.form-check-input:focus {
+    border-color: var(--ak-primary);
+    box-shadow: var(--ak-ring);
+}
+.form-switch .form-check-input { width: 2.5em; height: 1.35em; }
+
+.input-group-text {
+    background-color: var(--ak-surface-2);
+    border-color: var(--ak-border-strong);
+    color: var(--ak-text-muted);
+}
+
+.is-invalid { }
+.invalid-feedback { color: var(--ak-danger); font-weight: 500; }
+
+/* Floating labels (auth pages) */
+.form-floating > label { color: var(--ak-text-muted); }
+
+/* ---------- Tables --------------------------------------------------------- */
+.table {
+    --bs-table-bg: transparent;
+    --bs-table-color: var(--ak-text);
+    --bs-table-border-color: var(--ak-border);
+    --bs-table-hover-bg: var(--ak-surface-hover);
+    --bs-table-hover-color: var(--ak-text);
+    vertical-align: middle;
+}
+.table > thead th {
+    color: var(--ak-text-muted);
+    font-size: .74rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    border-bottom-color: var(--ak-border);
+    padding-top: .85rem;
+    padding-bottom: .85rem;
+}
+.table > tbody td { border-color: var(--ak-border); padding-top: .85rem; padding-bottom: .85rem; }
+
+/* A card that wraps a table */
+.ak-table-card {
+    background: var(--ak-surface);
+    border: 1px solid var(--ak-border);
+    border-radius: var(--ak-radius-lg);
+    box-shadow: var(--ak-shadow-sm);
+    overflow: hidden;
+}
+.ak-table-card .table { margin-bottom: 0; }
+.ak-table-card .table > :not(caption) > * > * { padding-left: 1.1rem; padding-right: 1.1rem; }
+
+/* ---------- Badges / status pills ----------------------------------------- */
+.badge { font-weight: 600; letter-spacing: .01em; padding: .4em .7em; border-radius: var(--ak-radius-sm); }
+
+.ak-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+    font-size: .78rem;
+    font-weight: 600;
+    padding: .28rem .6rem;
+    border-radius: 999px;
+    line-height: 1;
+    border: 1px solid transparent;
+}
+.ak-pill::before {
+    content: "";
+    width: .45rem;
+    height: .45rem;
+    border-radius: 999px;
+    background: currentColor;
+}
+.ak-pill-success { color: var(--ak-success); background: rgba(var(--ak-success-rgb), .12); border-color: rgba(var(--ak-success-rgb), .25); }
+.ak-pill-warning { color: #b5730a; background: rgba(var(--ak-warning-rgb), .14); border-color: rgba(var(--ak-warning-rgb), .3); }
+.ak-pill-muted   { color: var(--ak-text-muted); background: var(--ak-surface-2); border-color: var(--ak-border); }
+[data-bs-theme="dark"] .ak-pill-warning { color: #f6c164; }
+
+/* ---------- Alerts --------------------------------------------------------- */
+.alert {
+    border-radius: var(--ak-radius);
+    border: 1px solid transparent;
+    display: flex;
+    gap: .65rem;
+    align-items: flex-start;
+    font-weight: 500;
+}
+.alert .alert-ico { flex: none; font-size: 1.05rem; line-height: 1.4; }
+.alert-success { color: #0b7a55; background: rgba(var(--ak-success-rgb), .1); border-color: rgba(var(--ak-success-rgb), .28); }
+.alert-danger  { color: #c02626; background: rgba(var(--ak-danger-rgb), .09); border-color: rgba(var(--ak-danger-rgb), .28); }
+[data-bs-theme="dark"] .alert-success { color: #6ee7b7; }
+[data-bs-theme="dark"] .alert-danger  { color: #fca5a5; }
+
+/* ---------- Dropdown ------------------------------------------------------- */
+.dropdown-menu {
+    --bs-dropdown-bg: var(--ak-surface);
+    --bs-dropdown-border-color: var(--ak-border);
+    --bs-dropdown-border-radius: var(--ak-radius);
+    --bs-dropdown-link-color: var(--ak-text);
+    --bs-dropdown-link-hover-color: var(--ak-text);
+    --bs-dropdown-link-hover-bg: var(--ak-surface-2);
+    --bs-dropdown-link-active-bg: var(--ak-primary);
+    --bs-dropdown-link-active-color: #fff;
+    box-shadow: var(--ak-shadow-lg);
+    padding: .4rem;
+}
+.dropdown-menu .dropdown-item { border-radius: var(--ak-radius-sm); padding: .5rem .7rem; font-weight: 500; }
+.dropdown-divider { border-color: var(--ak-border); }
+
+/* ---------- Pagination ----------------------------------------------------- */
+.pagination {
+    --bs-pagination-color: var(--ak-text-muted);
+    --bs-pagination-bg: var(--ak-surface);
+    --bs-pagination-border-color: var(--ak-border);
+    --bs-pagination-hover-color: var(--ak-primary);
+    --bs-pagination-hover-bg: var(--ak-surface-2);
+    --bs-pagination-hover-border-color: var(--ak-border);
+    --bs-pagination-focus-color: var(--ak-primary);
+    --bs-pagination-active-bg: var(--ak-primary);
+    --bs-pagination-active-border-color: var(--ak-primary);
+    --bs-pagination-border-radius: var(--ak-radius-sm);
+}
+
+/* ---------- Navbar (app top bar) ------------------------------------------ */
+.ak-navbar {
+    background: color-mix(in srgb, var(--ak-surface) 88%, transparent);
+    -webkit-backdrop-filter: saturate(180%) blur(12px);
+    backdrop-filter: saturate(180%) blur(12px);
+    border-bottom: 1px solid var(--ak-border);
+    position: sticky;
+    top: 0;
+    z-index: 1030;
+}
+.ak-navbar .navbar-brand { font-weight: 800; letter-spacing: -0.03em; color: var(--ak-heading); display: inline-flex; align-items: center; gap: .55rem; }
+.ak-navbar .nav-link { color: var(--ak-text-muted); font-weight: 600; border-radius: var(--ak-radius-sm); padding: .4rem .75rem; }
+.ak-navbar .nav-link:hover { color: var(--ak-text); background: var(--ak-surface-2); }
+.ak-navbar .nav-link.active { color: var(--ak-primary); background: var(--ak-primary-subtle); }
+.navbar-toggler { border-color: var(--ak-border); }
+.navbar-toggler:focus { box-shadow: var(--ak-ring); }
+
+/* ---------- Brand mark ----------------------------------------------------- */
+.ak-logo {
+    width: 1.9rem;
+    height: 1.9rem;
+    border-radius: .6rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, var(--ak-primary), #8b5cf6);
+    color: #fff;
+    box-shadow: 0 4px 10px rgba(var(--ak-primary-rgb), .4);
+    flex: none;
+}
+.ak-logo svg { width: 1.05rem; height: 1.05rem; }
+
+/* ---------- Avatar --------------------------------------------------------- */
+.ak-avatar {
+    width: 2rem;
+    height: 2rem;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: .8rem;
+    background: var(--ak-primary-subtle);
+    color: var(--ak-primary-subtle-text);
+    flex: none;
+    text-transform: uppercase;
+}
+
+/* ---------- Theme toggle --------------------------------------------------- */
+.ak-theme-toggle {
+    width: 2.35rem;
+    height: 2.35rem;
+    border-radius: var(--ak-radius-sm);
+    border: 1px solid var(--ak-border);
+    background: var(--ak-surface);
+    color: var(--ak-text-muted);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.05rem;
+    cursor: pointer;
+    transition: background-color .15s ease, color .15s ease, border-color .15s ease;
+}
+.ak-theme-toggle:hover { background: var(--ak-surface-2); color: var(--ak-text); }
+.ak-theme-toggle .bi-sun-fill { display: none; }
+[data-bs-theme="dark"] .ak-theme-toggle .bi-moon-stars-fill { display: none; }
+[data-bs-theme="dark"] .ak-theme-toggle .bi-sun-fill { display: inline-block; }
+
+/* ---------- Page header ---------------------------------------------------- */
+.ak-page-header {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+.ak-page-header h1, .ak-page-header .h1 { margin: 0; font-size: 1.6rem; }
+.ak-page-title-sub { color: var(--ak-text-muted); font-size: .92rem; margin-top: .15rem; }
+.ak-back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: .35rem;
+    font-size: .85rem;
+    font-weight: 600;
+    color: var(--ak-text-muted);
+    text-decoration: none;
+    margin-bottom: .3rem;
+}
+.ak-back-link:hover { color: var(--ak-primary); }
+
+/* ---------- Empty state ---------------------------------------------------- */
+.ak-empty {
+    background: var(--ak-surface);
+    border: 1px dashed var(--ak-border-strong);
+    border-radius: var(--ak-radius-lg);
+    padding: 3.5rem 1.5rem;
+    text-align: center;
+}
+.ak-empty-icon {
+    width: 3.5rem;
+    height: 3.5rem;
+    border-radius: var(--ak-radius);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.6rem;
+    background: var(--ak-primary-subtle);
+    color: var(--ak-primary-subtle-text);
+    margin-bottom: 1rem;
+}
+
+/* ---------- Icon chip ------------------------------------------------------ */
+.ak-icon-box {
+    width: 2.6rem;
+    height: 2.6rem;
+    border-radius: var(--ak-radius);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    background: var(--ak-primary-subtle);
+    color: var(--ak-primary-subtle-text);
+    flex: none;
+}
+
+/* ---------- Misc ----------------------------------------------------------- */
+.ak-muted-link { color: var(--ak-text-muted); text-decoration: none; }
+.ak-muted-link:hover { color: var(--ak-primary); }
+.shadow-sm { box-shadow: var(--ak-shadow-sm) !important; }
+
+main { min-height: 60vh; }

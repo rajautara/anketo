@@ -20,29 +20,25 @@
 </head>
 <body class="ak-public-body">
 
-<div class="container">
-    <div class="ak-public-topbar">
-        <a href="<?= site_url('/') ?>" class="navbar-brand d-inline-flex align-items-center gap-2 text-decoration-none">
-            <?= $this->include('partials/logo') ?>
-            <span class="fw-bold">Anketo</span>
-        </a>
-        <button type="button" class="ak-theme-toggle" data-ak-theme-toggle aria-label="Toggle color theme" title="Toggle color theme">
-            <i class="bi bi-moon-stars-fill"></i>
-            <i class="bi bi-sun-fill"></i>
-        </button>
-    </div>
+<div class="position-absolute top-0 end-0 p-3">
+    <button type="button" class="ak-theme-toggle" data-ak-theme-toggle aria-label="Toggle color theme" title="Toggle color theme">
+        <i class="bi bi-moon-stars-fill"></i>
+        <i class="bi bi-sun-fill"></i>
+    </button>
 </div>
 
-<div class="container pb-5">
+<main class="container py-5">
     <div class="row justify-content-center">
-        <div class="col-12 col-md-9 col-lg-7 col-xl-6">
+        <div class="col-12 col-sm-10 col-md-7 col-lg-5 col-xl-4">
+            <a href="<?= site_url('/') ?>" class="d-inline-flex align-items-center gap-2 text-decoration-none mb-4 navbar-brand">
+                <?= $this->include('partials/logo') ?>
+                <span class="fs-5 fw-bold">Anketo</span>
+            </a>
+
             <?= $this->renderSection('main') ?>
-            <p class="text-center ak-public-footer mt-4 mb-0">
-                Powered by <a href="<?= site_url('/') ?>" class="ak-muted-link fw-semibold">Anketo</a>
-            </p>
         </div>
     </div>
-</div>
+</main>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
 <script src="<?= base_url('assets/js/theme.js') ?>"></script>

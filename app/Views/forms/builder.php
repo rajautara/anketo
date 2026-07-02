@@ -3,30 +3,28 @@
 <?= $this->section('title') ?>Builder: <?= esc($form['title']) ?> - Anketo<?= $this->endSection() ?>
 
 <?= $this->section('pageStyles') ?>
-<style>
-    .field-palette-item { cursor: grab; }
-    .field-palette-item:active { cursor: grabbing; }
-    #field-canvas { min-height: 200px; }
-    #field-canvas .field-row { cursor: default; background: #fff; }
-    #field-canvas .field-row.selected { border-color: #0d6efd !important; box-shadow: 0 0 0 .15rem rgba(13,110,253,.25); }
-    #field-canvas .drag-handle { cursor: grab; }
-    .sortable-ghost { opacity: .4; }
-    #properties-panel-empty { color: #6c757d; }
-</style>
+<link rel="stylesheet" href="<?= base_url('assets/css/builder.css') ?>">
 <?= $this->endSection() ?>
 
 <?= $this->section('main') ?>
 
 <?= $this->include('partials/flash') ?>
 
-<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+<div class="ak-page-header">
     <div>
-        <a href="<?= site_url('dashboard') ?>" class="text-decoration-none small d-block mb-1"><i class="bi bi-arrow-left"></i> Dashboard</a>
-        <h1 class="h4 mb-0"><?= esc($form['title']) ?></h1>
+        <a href="<?= site_url('dashboard') ?>" class="ak-back-link"><i class="bi bi-arrow-left"></i> Dashboard</a>
+        <div class="d-flex align-items-center gap-2">
+            <h1 class="h4 mb-0"><?= esc($form['title']) ?></h1>
+            <?php if ($form['status'] === 'published') : ?>
+                <span class="ak-pill ak-pill-success">Published</span>
+            <?php else : ?>
+                <span class="ak-pill ak-pill-warning">Draft</span>
+            <?php endif ?>
+        </div>
     </div>
-    <div class="d-flex gap-2 align-items-center">
-        <a href="<?= site_url('forms/' . $form['id'] . '/edit') ?>" class="btn btn-outline-secondary btn-sm">Form settings</a>
-        <a href="<?= site_url('forms/' . $form['id'] . '/submissions') ?>" class="btn btn-outline-secondary btn-sm">Submissions</a>
+    <div class="d-flex flex-wrap gap-2 align-items-center">
+        <a href="<?= site_url('forms/' . $form['id'] . '/edit') ?>" class="btn btn-outline-secondary btn-sm"><i class="bi bi-gear me-1"></i> Settings</a>
+        <a href="<?= site_url('forms/' . $form['id'] . '/submissions') ?>" class="btn btn-outline-secondary btn-sm"><i class="bi bi-inbox me-1"></i> Submissions</a>
         <?php if ($form['status'] === 'published') : ?>
             <form action="<?= site_url('forms/' . $form['id'] . '/unpublish') ?>" method="post" class="d-inline">
                 <?= csrf_field() ?>
@@ -35,56 +33,59 @@
         <?php else : ?>
             <form action="<?= site_url('forms/' . $form['id'] . '/publish') ?>" method="post" class="d-inline">
                 <?= csrf_field() ?>
-                <button type="submit" class="btn btn-success btn-sm">Publish</button>
+                <button type="submit" class="btn btn-success btn-sm"><i class="bi bi-globe me-1"></i> Publish</button>
             </form>
         <?php endif ?>
     </div>
 </div>
 
 <?php if ($form['status'] === 'published') : ?>
-    <div class="alert alert-success d-flex justify-content-between align-items-center gap-2">
-        <div class="text-truncate">
-            <i class="bi bi-link-45deg"></i>
-            Public link: <a href="<?= $publicUrl ?>" target="_blank" id="public-url-link"><?= $publicUrl ?></a>
+    <div class="ak-share-banner mb-3">
+        <div class="ak-share-url">
+            <i class="bi bi-link-45deg fs-5 flex-shrink-0"></i>
+            <a href="<?= $publicUrl ?>" target="_blank" id="public-url-link" class="text-truncate"><?= $publicUrl ?></a>
         </div>
-        <button type="button" class="btn btn-sm btn-success flex-shrink-0" id="copy-public-url">Copy link</button>
+        <button type="button" class="btn btn-sm btn-primary flex-shrink-0" id="copy-public-url"><i class="bi bi-clipboard me-1"></i> Copy link</button>
     </div>
 <?php endif ?>
 
 <div class="row g-3">
     <!-- Palette -->
-    <div class="col-md-3">
+    <div class="col-12 col-lg-3 ak-builder-col">
         <div class="card">
-            <div class="card-header bg-white fw-semibold">Add a field</div>
+            <div class="card-header">Add a field</div>
             <div class="card-body">
-                <div id="field-palette" class="d-flex flex-column gap-2">
+                <div id="field-palette">
                     <?php foreach ($fieldTypes as $type) : ?>
-                        <div class="field-palette-item border rounded p-2 d-flex align-items-center gap-2" data-field-type="<?= esc($type) ?>">
+                        <div class="field-palette-item" data-field-type="<?= esc($type) ?>">
                             <i class="bi <?= esc(field_type_icon($type)) ?>"></i>
                             <span><?= esc(field_type_label($type)) ?></span>
                         </div>
                     <?php endforeach ?>
                 </div>
-                <p class="text-muted small mt-3 mb-0">Drag a field type onto the form to add it.</p>
+                <p class="text-muted small mt-3 mb-0"><i class="bi bi-hand-index-thumb me-1"></i> Drag a field onto the form.</p>
             </div>
         </div>
     </div>
 
     <!-- Canvas -->
-    <div class="col-md-6">
+    <div class="col-12 col-lg-6 ak-builder-col">
         <div class="card">
-            <div class="card-header bg-white fw-semibold">Form fields</div>
+            <div class="card-header">Form fields</div>
             <div class="card-body">
                 <ul id="field-canvas" class="list-unstyled d-flex flex-column gap-2 mb-0"></ul>
-                <p id="empty-canvas-hint" class="text-muted text-center py-4 mb-0">Drop a field here to get started.</p>
+                <p id="empty-canvas-hint" class="ak-canvas-hint text-center py-5 mb-0">
+                    <i class="bi bi-arrow-down-square d-block fs-3 mb-2 opacity-50"></i>
+                    Drop a field here to get started.
+                </p>
             </div>
         </div>
     </div>
 
     <!-- Properties -->
-    <div class="col-md-3">
+    <div class="col-12 col-lg-3 ak-builder-col">
         <div class="card">
-            <div class="card-header bg-white fw-semibold">Properties</div>
+            <div class="card-header">Properties</div>
             <div class="card-body">
                 <p id="properties-panel-empty">Select a field to edit its properties.</p>
                 <form id="properties-form" class="d-none"></form>

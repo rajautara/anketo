@@ -1,0 +1,158 @@
+/* Anketo — Public respondent form + marketing landing */
+
+/* ---- Public form shell ----------------------------------------------------*/
+.ak-public-body {
+    background:
+        radial-gradient(1100px 480px at 50% -8%, var(--ak-bg-accent), transparent 70%),
+        var(--ak-bg);
+    min-height: 100vh;
+}
+.ak-public-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1.1rem 0;
+}
+.ak-form-card {
+    border: 1px solid var(--ak-border);
+    border-radius: var(--ak-radius-xl);
+    box-shadow: var(--ak-shadow-lg);
+    overflow: hidden;
+    background: var(--ak-surface);
+}
+.ak-form-accent { height: 6px; background: linear-gradient(90deg, var(--ak-primary), #8b5cf6); }
+.ak-form-head { padding: 1.75rem 1.9rem .25rem; }
+.ak-form-title { font-size: 1.6rem; margin-bottom: .5rem; }
+.ak-form-desc { color: var(--ak-text-muted); }
+.ak-form-body { padding: 1.25rem 1.9rem 1.9rem; }
+.ak-form-body .mb-3 { margin-bottom: 1.25rem !important; }
+.ak-public-footer { color: var(--ak-text-muted); font-size: .82rem; }
+
+/* Choice fields → tappable option cards (no markup change; styles .form-check) */
+.ak-form-body .form-check {
+    position: relative;
+    padding: .7rem .8rem .7rem 2.6rem;
+    border: 1px solid var(--ak-border);
+    border-radius: var(--ak-radius-sm);
+    margin-bottom: .5rem;
+    transition: border-color .12s ease, background-color .12s ease;
+    min-height: auto;
+}
+.ak-form-body .form-check:hover { border-color: var(--ak-border-strong); background: var(--ak-surface-hover); }
+.ak-form-body .form-check .form-check-input { margin-left: -1.8rem; margin-top: .15rem; }
+.ak-form-body .form-check:has(.form-check-input:checked) {
+    border-color: var(--ak-primary);
+    background: var(--ak-primary-subtle);
+}
+.ak-form-body .form-check-label { cursor: pointer; font-weight: 500; display: block; }
+
+/* ---- Success state --------------------------------------------------------*/
+.ak-success { text-align: center; padding: 3rem 1.9rem; }
+.ak-success-badge {
+    width: 4.5rem;
+    height: 4.5rem;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.2rem;
+    color: #fff;
+    background: linear-gradient(135deg, var(--ak-success), #059669);
+    box-shadow: 0 10px 26px rgba(var(--ak-success-rgb), .4);
+    margin-bottom: 1.25rem;
+    animation: ak-pop .45s cubic-bezier(.2, .9, .3, 1.4) both;
+}
+@keyframes ak-pop {
+    0% { transform: scale(.4); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+/* ---- Landing / marketing --------------------------------------------------*/
+.ak-hero {
+    position: relative;
+    padding: clamp(3rem, 8vw, 6.5rem) 0 clamp(2.5rem, 6vw, 4.5rem);
+    text-align: center;
+    overflow: hidden;
+}
+.ak-hero::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(760px 380px at 50% -12%, var(--ak-bg-accent), transparent 72%);
+    z-index: -1;
+}
+.ak-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: .45rem;
+    font-size: .82rem;
+    font-weight: 600;
+    color: var(--ak-primary-subtle-text);
+    background: var(--ak-primary-subtle);
+    border: 1px solid rgba(var(--ak-primary-rgb), .28);
+    padding: .35rem .8rem;
+    border-radius: 999px;
+    margin-bottom: 1.4rem;
+}
+.ak-hero h1 {
+    font-size: clamp(2.1rem, 5.5vw, 3.5rem);
+    line-height: 1.07;
+    margin-bottom: 1.1rem;
+    letter-spacing: -0.035em;
+}
+.ak-hero .ak-hero-accent {
+    background: linear-gradient(120deg, var(--ak-primary), #8b5cf6);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+.ak-hero-lead {
+    font-size: clamp(1.05rem, 2.2vw, 1.25rem);
+    color: var(--ak-text-muted);
+    max-width: 40rem;
+    margin: 0 auto 2rem;
+}
+.ak-hero-cta { display: flex; gap: .75rem; justify-content: center; flex-wrap: wrap; }
+
+.ak-feature {
+    height: 100%;
+    background: var(--ak-surface);
+    border: 1px solid var(--ak-border);
+    border-radius: var(--ak-radius-lg);
+    padding: 1.6rem;
+    box-shadow: var(--ak-shadow-sm);
+    transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+}
+.ak-feature:hover { transform: translateY(-3px); box-shadow: var(--ak-shadow-md); border-color: var(--ak-border-strong); }
+.ak-feature h3 { font-size: 1.1rem; margin: 1rem 0 .5rem; }
+.ak-feature p { color: var(--ak-text-muted); margin: 0; font-size: .95rem; }
+
+/* Product mock preview under the hero */
+.ak-mock {
+    background: var(--ak-surface);
+    border: 1px solid var(--ak-border);
+    border-radius: var(--ak-radius-xl);
+    box-shadow: var(--ak-shadow-lg);
+    overflow: hidden;
+    max-width: 60rem;
+    margin: 3rem auto 0;
+}
+.ak-mock-bar {
+    display: flex;
+    align-items: center;
+    gap: .45rem;
+    padding: .8rem 1rem;
+    border-bottom: 1px solid var(--ak-border);
+    background: var(--ak-surface-2);
+}
+.ak-mock-dot { width: .7rem; height: .7rem; border-radius: 999px; background: var(--ak-border-strong); }
+.ak-mock-body { padding: 1.5rem; }
+.ak-skel { background: var(--ak-surface-2); border-radius: .5rem; }
+
+.ak-landing-footer {
+    border-top: 1px solid var(--ak-border);
+    color: var(--ak-text-muted);
+    padding: 2rem 0;
+    margin-top: 3.5rem;
+}

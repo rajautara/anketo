@@ -6,23 +6,26 @@
 
 <?php if ($submitted) : ?>
 
-    <div class="card shadow-sm">
-        <div class="card-body text-center py-5">
-            <i class="bi bi-check-circle-fill text-success" style="font-size: 3rem;"></i>
-            <h1 class="h4 mt-3 mb-2"><?= esc($form['title']) ?></h1>
-            <p class="mb-0"><?= esc($form['success_message'] ?: 'Thank you! Your response has been recorded.') ?></p>
+    <div class="ak-form-card">
+        <div class="ak-form-accent"></div>
+        <div class="ak-success">
+            <span class="ak-success-badge"><i class="bi bi-check-lg"></i></span>
+            <h1 class="h4 mb-2"><?= esc($form['title']) ?></h1>
+            <p class="text-muted mb-0"><?= esc($form['success_message'] ?: 'Thank you! Your response has been recorded.') ?></p>
         </div>
     </div>
 
 <?php else : ?>
 
-    <div class="card shadow-sm">
-        <div class="card-body p-4">
-            <h1 class="h4 mb-2"><?= esc($form['title']) ?></h1>
+    <div class="ak-form-card">
+        <div class="ak-form-accent"></div>
+        <div class="ak-form-head">
+            <h1 class="ak-form-title"><?= esc($form['title']) ?></h1>
             <?php if (! empty($form['description'])) : ?>
-                <p class="text-muted"><?= nl2br(esc($form['description'])) ?></p>
+                <p class="ak-form-desc mb-0"><?= nl2br(esc($form['description'])) ?></p>
             <?php endif ?>
-
+        </div>
+        <div class="ak-form-body">
             <?= $this->include('partials/flash') ?>
 
             <?php
@@ -46,9 +49,9 @@
                 <?php endforeach ?>
 
                 <?php if (empty($fields)) : ?>
-                    <p class="text-muted">This form has no fields yet.</p>
+                    <p class="text-muted mb-0">This form has no fields yet.</p>
                 <?php else : ?>
-                    <button type="submit" class="btn btn-primary w-100">
+                    <button type="submit" class="btn btn-primary btn-lg w-100 mt-2">
                         <?= esc($form['submit_button_text'] ?: 'Submit') ?>
                     </button>
                 <?php endif ?>

@@ -1,0 +1,94 @@
+/* Anketo — Form Builder (3-pane: palette / canvas / properties) */
+
+.ak-builder-col .card { height: 100%; }
+.ak-builder-col .card-header {
+    background: transparent;
+    border-bottom: 1px solid var(--ak-border);
+    font-size: .8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--ak-text-muted);
+    padding: .9rem 1.1rem;
+}
+
+/* ---- Palette --------------------------------------------------------------*/
+#field-palette { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; }
+.field-palette-item {
+    cursor: grab;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: .4rem;
+    padding: .7rem .6rem !important;
+    border: 1px solid var(--ak-border) !important;
+    border-radius: var(--ak-radius-sm) !important;
+    background: var(--ak-surface);
+    color: var(--ak-text);
+    font-size: .82rem;
+    font-weight: 600;
+    transition: border-color .15s ease, background-color .15s ease, box-shadow .15s ease, transform .05s ease;
+}
+.field-palette-item i {
+    font-size: 1.05rem;
+    color: var(--ak-primary);
+    width: 1.7rem;
+    height: 1.7rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: .45rem;
+    background: var(--ak-primary-subtle);
+}
+.field-palette-item:hover { border-color: var(--ak-primary) !important; box-shadow: var(--ak-shadow-sm); }
+.field-palette-item:active { cursor: grabbing; }
+
+/* ---- Canvas ---------------------------------------------------------------*/
+#field-canvas { min-height: 240px; }
+#field-canvas .field-row {
+    cursor: default;
+    background: var(--ak-surface) !important;
+    border: 1px solid var(--ak-border) !important;
+    border-radius: var(--ak-radius-sm) !important;
+    padding: .7rem .8rem !important;
+    transition: border-color .12s ease, box-shadow .12s ease;
+}
+#field-canvas .field-row:hover { border-color: var(--ak-border-strong) !important; }
+#field-canvas .field-row.selected {
+    border-color: var(--ak-primary) !important;
+    box-shadow: var(--ak-ring) !important;
+}
+#field-canvas .field-row .bi:not(.drag-handle .bi) { color: var(--ak-text-muted); }
+#field-canvas .drag-handle { cursor: grab; color: var(--ak-text-muted); }
+#field-canvas .drag-handle:active { cursor: grabbing; }
+#field-canvas .field-row-label { font-weight: 600; color: var(--ak-text); }
+
+.sortable-ghost { opacity: .35; }
+.sortable-chosen { box-shadow: var(--ak-shadow-md); }
+
+.ak-canvas-hint { color: var(--ak-text-muted); }
+
+/* ---- Properties panel -----------------------------------------------------*/
+#properties-panel-empty { color: var(--ak-text-muted); font-size: .9rem; }
+#properties-form .form-label { font-size: .78rem; text-transform: uppercase; letter-spacing: .04em; color: var(--ak-text-muted); margin-bottom: .25rem; }
+#properties-form .option-row { margin-bottom: .4rem; }
+
+/* ---- Public link banner ---------------------------------------------------*/
+.ak-share-banner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: .75rem;
+    background: var(--ak-primary-subtle);
+    border: 1px solid rgba(var(--ak-primary-rgb), .35);
+    color: var(--ak-primary-subtle-text);
+    border-radius: var(--ak-radius);
+    padding: .8rem 1rem;
+}
+.ak-share-banner a { color: inherit; font-weight: 600; word-break: break-all; }
+.ak-share-banner .ak-share-url { display: inline-flex; align-items: center; gap: .5rem; min-width: 0; }
+
+@media (max-width: 767.98px) {
+    #field-palette { grid-template-columns: 1fr 1fr 1fr; }
+}
