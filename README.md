@@ -66,12 +66,15 @@ php spark shield:user addgroup -e your@email.com -g admin
 ## Project structure notes
 
 - `system/` is **not** committed to this repo — the framework and Shield are installed via Composer into `vendor/`, same as any standard CodeIgniter 4 project. Run `composer install` before anything else will work.
+- `writable/{cache,logs,session,uploads,debugbar}` are tracked via `.gitkeep` placeholders so they exist after a fresh `git clone` — CodeIgniter needs to write session and log files into these on every request, even before you've touched the app, and their absence causes a 500 on every route (see Troubleshooting below).
 - Domain tables (`forms`, `form_fields`, `form_submissions`, `submission_data`) are separate from Shield's own auth tables (`users`, `auth_identities`, `auth_groups_users`, etc.) — see `app/Database/Migrations/`.
 - Uploaded files are stored under `writable/uploads/forms/{form_id}/` (outside the public webroot) and served through an ownership-checked download route, not linked directly.
 
-## Deployment (cPanel shared hosting, SSH + FTP)
+## Deployment (cPanel-style shared hosting, SSH + FTP)
 
 **Core rule for every option below:** only `public/` may be web-accessible. `app/`, `vendor/`, `writable/`, and `.env` must sit **outside** `public_html` (or whatever your domain's document root is) so they can never be requested directly by a browser.
+
+Note: the exact home-directory layout differs by host — classic cPanel uses `~/public_html` directly under your home directory, while some hosts (e.g. Hostinger hPanel) nest it per-domain as `~/domains/yourdomain.com/public_html`. The examples below use `~/anketo` for brevity; substitute your host's actual path (e.g. `~/domains/yourdomain.com/anketo`) throughout.
 
 ### 1. Get the code onto the server
 
@@ -79,13 +82,13 @@ Pick one:
 
 - **SSH + git (recommended):**
   ```bash
-  ssh yourcpaneluser@yourserver.com
-  cd ~
+  ssh youruser@yourserver.com
+  cd ~                    # or e.g. ~/domains/yourdomain.com on hosts that nest per-domain
   git clone <your-repo-url> anketo
   ```
-- **FTP:** zip the project on your machine (exclude `vendor/`, `writable/cache/*`, `writable/logs/*`, `writable/session/*`, `writable/debugbar/*`, `.env` — `.gitignore` already lists these), upload the zip to your home directory (**not** inside `public_html`) via FTP, then in cPanel File Manager (or `unzip` over SSH) extract it to `~/anketo`.
+- **FTP:** zip the project on your machine (exclude `vendor/`, `writable/cache/*`, `writable/logs/*`, `writable/session/*`, `writable/debugbar/*`, `.env` — `.gitignore` already lists these), upload the zip to a folder **outside** `public_html` via FTP, then in File Manager (or `unzip` over SSH) extract it there.
 
-Either way, end up with the full project at `~/anketo` — a sibling of `public_html`, not inside it.
+Either way, end up with the full project as a **sibling** of `public_html`, not inside it — e.g. `~/anketo` next to `~/public_html`.
 
 ### 2. Install dependencies (SSH)
 
@@ -98,20 +101,33 @@ This populates `~/anketo/vendor/` with the framework and Shield. `system/` is no
 
 ### 3. Point your domain at `public/`
 
-- **Preferred — set a custom document root:** in cPanel → **Domains**, edit the domain/subdomain you're deploying to and set its **Document Root** to `anketo/public` (relative to your home directory). Nothing else outside `public/` becomes web-accessible, and `public/index.php` works unmodified since `app/` is exactly one level above it, as it expects.
-- **Fallback — if your host won't let you change the document root** (e.g. you're stuck serving from `public_html` itself): copy the *contents* of `~/anketo/public/` (including the hidden `.htaccess`) into `public_html/`, then edit `public_html/index.php` and change:
+**Whatever path the project lives at, it must not sit inside `public_html` (or any other web-accessible folder) itself — only `public/` may be reachable by the web server.** `app/.htaccess` and `writable/.htaccess` block direct access to those two folders specifically, but `.env`, `.git/`, `vendor/`, `composer.json/.lock` have no such protection, so if the whole project sits under `public_html`, things like `https://yourdomain.com/anketo/.env` (DB password + encryption key) can be directly downloadable.
+
+- **Preferred — custom document root, e.g. via a subdomain (works on Hostinger hPanel and most cPanel-style hosts):**
+  1. Put the whole project *outside* `public_html`, e.g. `~/domains/yourdomain.com/anketo` (a sibling of `public_html`, not inside it).
+  2. Create a subdomain (e.g. `anketo.yourdomain.com`) and set its **Directory** to `.../anketo/public` — the `public/` subfolder specifically, not the project root.
+  3. No code changes needed: `public/index.php` already expects `app/` exactly one directory above it, which is preserved since you moved the whole project as one unit.
+  4. Set `app.baseURL` in `.env` to the subdomain, e.g. `https://anketo.yourdomain.com/`.
+- **If you must serve from `public_html` itself, or the subdomain's document root is a fixed subfolder you can't repoint** (some hPanel/cPanel setups create the subdomain directory as e.g. `public_html/anketo` and don't let you edit it to point elsewhere): copy the *contents* of `~/anketo/public/` (including the hidden `.htaccess`) into that web-accessible folder, then edit the copied `index.php` there and change:
   ```php
   require FCPATH . '../app/Config/Paths.php';
   ```
-  to point at the real location of `app/`, e.g. if `anketo/` sits next to `public_html/` in your home directory:
-  ```php
-  require FCPATH . '../anketo/app/Config/Paths.php';
-  ```
-  You'll need to redo this copy (but not the edit) every time `public/assets` or `public/index.php` changes upstream — the custom-document-root option avoids this entirely, so use it if you can.
+  to point at wherever the real project root ended up, relative to the copied `index.php`'s own folder (`FCPATH`). Two examples:
+  - Serving from `public_html/` itself, with `anketo/` a sibling of `public_html/`:
+    ```php
+    require FCPATH . '../anketo/app/Config/Paths.php';
+    ```
+  - Subdomain forced to `public_html/anketo/` as its docroot, with the real project cloned as `anketo-app` *outside* `public_html` (e.g. `~/domains/yourdomain.com/anketo-app`, a sibling of `public_html/`) — note the extra `../` since the copied `index.php` now sits one folder deeper:
+    ```php
+    require FCPATH . '../../anketo-app/app/Config/Paths.php';
+    ```
+  Either way, use a different name for the real project root than the web-accessible copy (e.g. `anketo-app` vs. `public_html/anketo`) so the two don't get confused. You'll need to redo the copy (but not the edit) every time `public/assets` or `public/index.php` changes upstream — the subdomain/custom-docroot option avoids this entirely, so use it if you can.
+
+**Sanity check after either option:** `curl -I https://yourdomain.com/anketo/.env` (or wherever the project root ended up under a web-accessible path) should return `404`, not `200`.
 
 ### 4. Create the database
 
-cPanel → **MySQL Database Wizard**: create a database, create a user, add the user to the database with **All Privileges**. Note the full db/user names cPanel gives you — they're usually prefixed with your cPanel username (e.g. `cpuser_anketo`).
+In your host's control panel (cPanel: **MySQL Database Wizard**; Hostinger hPanel: **Databases → MySQL Databases**), create a database, create a user, and add the user to the database with **All Privileges**. Note the full db/user names your host gives you — they're usually prefixed with your account username (e.g. `cpuser_anketo` or `u843504816_anketo`).
 
 ### 5. Configure `.env` (SSH or File Manager)
 
@@ -125,7 +141,7 @@ Edit `.env`:
 
 ```ini
 CI_ENVIRONMENT = production
-app.baseURL = 'https://yourdomain.com/'
+app.baseURL = 'https://yourdomain.com/'   # or 'https://anketo.yourdomain.com/' if you used the subdomain approach in step 3
 app.forceGlobalSecureRequests = true
 
 database.default.hostname = localhost
@@ -168,3 +184,17 @@ php spark migrate --all
 ```
 
 If you used the fallback document-root option in step 3, re-copy `public/`'s contents into `public_html/` after pulling changes that touch `public/assets` or `public/index.php`.
+
+### Troubleshooting
+
+- **Every route returns 500 right after a fresh deploy, even `/`:** check `~/anketo/writable/logs/*.log` for the real error (production mode hides it from the browser). The most common cause is `writable/cache`, `writable/logs`, `writable/session`, `writable/uploads`, or `writable/debugbar` not existing — CodeIgniter needs to write into these on every request. This repo now tracks them via `.gitkeep`, but if you're deploying from an older checkout or a zip/FTP upload that dropped empty folders, recreate them manually:
+  ```bash
+  mkdir -p ~/anketo/writable/{cache,logs,session,uploads,debugbar}
+  chmod -R 775 ~/anketo/writable
+  ```
+- **`DatabaseException: Table '....settings' doesn't exist` (or any other missing-table error) in `writable/logs/`:** migrations never actually ran — most often because an earlier `php spark migrate --all` silently died on the missing-`writable/`-folder issue above before the DB error had a chance to surface. Fix the underlying cause, then re-run:
+  ```bash
+  php spark migrate --all
+  ```
+- **`php spark shield:user addgroup -e you@example.com -g admin` says "User doesn't exist":** the promote command doesn't create accounts, it only upgrades an existing one. Register at `https://yourdomain.com/register` first, then re-run the command.
+- **Sanity-checking `.env` isn't exposed:** `curl -I https://yourdomain.com/.env` should be `404`. A `500` there (and on every other route) points at the missing-`writable/`-folder issue above, not at `.env` actually being served — check the logs before assuming a security problem.
