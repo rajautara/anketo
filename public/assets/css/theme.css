@@ -550,3 +550,16 @@ hr {
 .shadow-sm { box-shadow: var(--ak-shadow-sm) !important; }
 
 main { min-height: 60vh; }
+
+/* ---------- Mobile ---------------------------------------------------------- */
+@media (max-width: 575.98px) {
+    main.container { padding-left: 1rem; padding-right: 1rem; }
+    .ak-page-header { margin-bottom: 1.15rem; gap: .6rem; }
+    .ak-page-header h1, .ak-page-header .h1 { font-size: 1.3rem; }
+    .ak-page-header .btn { width: 100%; }
+    .card-body.p-4 { padding: 1.15rem !important; }
+    .ak-table-card .table > :not(caption) > * > * { padding-left: .8rem; padding-right: .8rem; }
+    .ak-empty { padding: 2.5rem 1.15rem; }
+    /* Keep action clusters and dropdowns from overflowing narrow rows */
+    .table-responsive { -webkit-overflow-scrolling: touch; }
+}

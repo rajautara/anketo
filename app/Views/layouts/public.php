@@ -35,7 +35,7 @@
 
 <div class="container pb-5">
     <div class="row justify-content-center">
-        <div class="col-12 col-md-9 col-lg-7 col-xl-6">
+        <div class="col-12 col-md-10 col-lg-9 col-xl-8">
             <?= $this->renderSection('main') ?>
             <p class="text-center ak-public-footer mt-4 mb-0">
                 Powered by <a href="<?= site_url('/') ?>" class="ak-muted-link fw-semibold">Anketo</a>

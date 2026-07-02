@@ -43,6 +43,7 @@
                         <li><span class="dropdown-item-text small text-muted"><?= esc(auth()->user()->email) ?></span></li>
                         <li><hr class="dropdown-divider"></li>
                         <li><a class="dropdown-item" href="<?= site_url('dashboard') ?>"><i class="bi bi-grid-1x2 me-2"></i>Dashboard</a></li>
+                        <li><a class="dropdown-item" href="<?= site_url('account') ?>"><i class="bi bi-person-gear me-2"></i>My account</a></li>
                         <?php if (auth()->user()->inGroup('admin')) : ?>
                             <li><a class="dropdown-item" href="<?= site_url('admin/users') ?>"><i class="bi bi-people me-2"></i>Users</a></li>
                         <?php endif ?>

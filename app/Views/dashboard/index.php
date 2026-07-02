@@ -28,61 +28,62 @@
         </a>
     </div>
 <?php else : ?>
-    <div class="row g-3 g-lg-4">
-        <?php foreach ($forms as $form) : ?>
-            <div class="col-sm-6 col-lg-4">
-                <div class="card h-100">
-                    <div class="card-body d-flex flex-column">
-                        <div class="d-flex justify-content-between align-items-start gap-2 mb-3">
-                            <a href="<?= site_url('forms/' . $form['id'] . '/builder') ?>" class="h5 mb-0 text-decoration-none text-truncate" title="<?= esc($form['title']) ?>">
-                                <?= esc($form['title']) ?>
-                            </a>
-                            <?php if ($form['status'] === 'published') : ?>
-                                <span class="ak-pill ak-pill-success flex-shrink-0">Published</span>
-                            <?php elseif ($form['status'] === 'archived') : ?>
-                                <span class="ak-pill ak-pill-muted flex-shrink-0">Archived</span>
-                            <?php else : ?>
-                                <span class="ak-pill ak-pill-warning flex-shrink-0">Draft</span>
-                            <?php endif ?>
-                        </div>
-
-                        <div class="d-flex flex-wrap gap-3 text-muted small mb-3">
-                            <span class="d-inline-flex align-items-center gap-1">
-                                <i class="bi bi-inbox"></i> <?= (int) $form['submission_count'] ?> <?= (int) $form['submission_count'] === 1 ? 'response' : 'responses' ?>
-                            </span>
-                            <span class="d-inline-flex align-items-center gap-1">
-                                <i class="bi bi-calendar3"></i> <?= esc(date('M j, Y', strtotime($form['created_at']))) ?>
-                            </span>
-                        </div>
-
-                        <div class="mt-auto d-flex gap-2 pt-3 border-top">
-                            <a href="<?= site_url('forms/' . $form['id'] . '/builder') ?>" class="btn btn-sm btn-outline-primary flex-fill">
-                                <i class="bi bi-pencil-square me-1"></i> Builder
-                            </a>
-                            <a href="<?= site_url('forms/' . $form['id'] . '/submissions') ?>" class="btn btn-sm btn-outline-secondary" title="Submissions">
-                                <i class="bi bi-inbox"></i>
-                            </a>
-                            <div class="dropdown">
-                                <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="More actions">
-                                    <i class="bi bi-three-dots"></i>
-                                </button>
-                                <ul class="dropdown-menu dropdown-menu-end">
-                                    <li><a class="dropdown-item" href="<?= site_url('forms/' . $form['id'] . '/edit') ?>"><i class="bi bi-gear me-2"></i>Settings</a></li>
-                                    <li><a class="dropdown-item" href="<?= site_url('forms/' . $form['id'] . '/submissions') ?>"><i class="bi bi-inbox me-2"></i>Submissions</a></li>
-                                    <li><hr class="dropdown-divider"></li>
-                                    <li>
-                                        <form action="<?= site_url('forms/' . $form['id'] . '/delete') ?>" method="post" onsubmit="return confirm('Delete this form and all its submissions?');">
-                                            <?= csrf_field() ?>
-                                            <button type="submit" class="dropdown-item text-danger"><i class="bi bi-trash me-2"></i>Delete</button>
-                                        </form>
-                                    </li>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        <?php endforeach ?>
+    <div class="ak-table-card">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0 align-middle">
+                <thead>
+                    <tr>
+                        <th>Form</th>
+                        <th>Status</th>
+                        <th class="text-center">Responses</th>
+                        <th class="d-none d-md-table-cell">Created</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($forms as $form) : ?>
+                        <tr>
+                            <td>
+                                <a href="<?= site_url('forms/' . $form['id'] . '/builder') ?>" class="fw-semibold text-decoration-none d-inline-block text-truncate" style="max-width: 22rem;" title="<?= esc($form['title']) ?>">
+                                    <?= esc($form['title']) ?>
+                                </a>
+                                <div class="text-muted small d-md-none"><?= esc(date('M j, Y', strtotime($form['created_at']))) ?></div>
+                            </td>
+                            <td>
+                                <?php if ($form['status'] === 'published') : ?>
+                                    <span class="ak-pill ak-pill-success">Published</span>
+                                <?php elseif ($form['status'] === 'archived') : ?>
+                                    <span class="ak-pill ak-pill-muted">Archived</span>
+                                <?php else : ?>
+                                    <span class="ak-pill ak-pill-warning">Draft</span>
+                                <?php endif ?>
+                            </td>
+                            <td class="text-center"><?= (int) $form['submission_count'] ?></td>
+                            <td class="text-muted d-none d-md-table-cell"><?= esc(date('M j, Y', strtotime($form['created_at']))) ?></td>
+                            <td class="text-end">
+                                <div class="d-inline-flex gap-2 align-items-center justify-content-end">
+                                    <a href="<?= site_url('forms/' . $form['id'] . '/builder') ?>" class="btn btn-sm btn-outline-primary" title="Builder">
+                                        <i class="bi bi-pencil-square"></i><span class="d-none d-lg-inline ms-1">Builder</span>
+                                    </a>
+                                    <a href="<?= site_url('forms/' . $form['id'] . '/submissions') ?>" class="btn btn-sm btn-outline-secondary" title="Submissions">
+                                        <i class="bi bi-inbox"></i>
+                                    </a>
+                                    <a href="<?= site_url('forms/' . $form['id'] . '/edit') ?>" class="btn btn-sm btn-outline-secondary" title="Settings">
+                                        <i class="bi bi-gear"></i>
+                                    </a>
+                                    <form action="<?= site_url('forms/' . $form['id'] . '/delete') ?>" method="post" class="d-inline" onsubmit="return confirm('Delete this form and all its submissions?');">
+                                        <?= csrf_field() ?>
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    <?php endforeach ?>
+                </tbody>
+            </table>
+        </div>
     </div>
 <?php endif ?>
 

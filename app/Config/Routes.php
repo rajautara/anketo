@@ -15,6 +15,11 @@ $routes->post('f/(:segment)', 'PublicFormController::submit/$1');
 $routes->group('', ['filter' => 'session'], static function ($routes) {
     $routes->get('dashboard', 'DashboardController::index');
 
+    // Own account: profile (email) + password
+    $routes->get('account', 'AccountController::edit');
+    $routes->post('account/profile', 'AccountController::updateProfile');
+    $routes->post('account/password', 'AccountController::updatePassword');
+
     $routes->resource('forms', [
         'controller'  => 'FormController',
         'except'      => 'show',
@@ -39,5 +44,8 @@ $routes->group('', ['filter' => 'session'], static function ($routes) {
 // Admin only
 $routes->group('admin', ['filter' => ['session', 'group:admin']], static function ($routes) {
     $routes->get('users', 'Admin\UserController::index');
+    $routes->get('users/new', 'Admin\UserController::new');
+    $routes->post('users', 'Admin\UserController::create');
     $routes->post('users/(:num)/group', 'Admin\UserController::updateGroup/$1');
+    $routes->post('users/(:num)/delete', 'Admin\UserController::delete/$1');
 });
