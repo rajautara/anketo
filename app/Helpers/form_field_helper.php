@@ -13,6 +13,8 @@ if (! function_exists('field_type_label')) {
             'select'   => 'Dropdown',
             'date'     => 'Date',
             'file'     => 'File Upload',
+            'paragraph'   => 'Paragraph',
+            'appointment' => 'Appointment',
         ];
 
         return $labels[$type] ?? ucfirst($type);
@@ -32,6 +34,8 @@ if (! function_exists('field_type_icon')) {
             'select'   => 'bi-menu-button-wide',
             'date'     => 'bi-calendar-date',
             'file'     => 'bi-paperclip',
+            'paragraph'   => 'bi-text-left',
+            'appointment' => 'bi-calendar-check',
         ];
 
         return $icons[$type] ?? 'bi-input-cursor-text';

@@ -29,6 +29,24 @@
 .ak-form-body .mb-3 { margin-bottom: 1.25rem !important; }
 .ak-public-footer { color: var(--ak-text-muted); font-size: .82rem; }
 
+/* Conditionally-hidden fields */
+.ak-field[hidden] { display: none !important; }
+
+/* Rich-text paragraph body (Quill output) */
+.ak-paragraph-body :where(p, ul, ol, blockquote, h1, h2, h3, h4, h5, h6):last-child { margin-bottom: 0; }
+.ak-paragraph-body .ql-align-center { text-align: center; }
+.ak-paragraph-body .ql-align-right { text-align: right; }
+.ak-paragraph-body .ql-align-justify { text-align: justify; }
+
+/* Appointment field → date + tappable time slots */
+.ak-appt-slots:empty { display: none; }
+.ak-appt-slot { min-width: 4.5rem; }
+.ak-appt-slot.ak-appt-booked {
+    text-decoration: line-through;
+    opacity: .5;
+    cursor: not-allowed;
+}
+
 /* Choice fields → tappable option cards (no markup change; styles .form-check) */
 .ak-form-body .form-check {
     position: relative;

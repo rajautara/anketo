@@ -42,10 +42,13 @@
                 <?= csrf_field() ?>
 
                 <?php foreach ($fields as $field) : ?>
-                    <?= view('public/fields/' . $field['field_type'], [
-                        'field'      => $field,
-                        'fieldError' => $errors[$field['field_key']] ?? null,
-                    ]) ?>
+                    <div class="ak-field" data-field-key="<?= esc($field['field_key'], 'attr') ?>" data-field-type="<?= esc($field['field_type'], 'attr') ?>">
+                        <?= view('public/fields/' . $field['field_type'], [
+                            'field'       => $field,
+                            'fieldError'  => $errors[$field['field_key']] ?? null,
+                            'bookedSlots' => $bookedSlots ?? [],
+                        ]) ?>
+                    </div>
                 <?php endforeach ?>
 
                 <?php if (empty($fields)) : ?>
@@ -59,6 +62,13 @@
         </div>
     </div>
 
+    <script id="ak-form-config" type="application/json"><?= json_encode($formConfig ?? [], JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?></script>
+
 <?php endif ?>
 
+<?= $this->endSection() ?>
+
+<?= $this->section('pageScripts') ?>
+<script src="<?= base_url('assets/js/conditions.js') ?>"></script>
+<script src="<?= base_url('assets/js/appointment.js') ?>"></script>
 <?= $this->endSection() ?>

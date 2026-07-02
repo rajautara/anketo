@@ -2,6 +2,9 @@
 
 namespace App\Controllers;
 
+use App\Libraries\AppointmentAvailability;
+use App\Libraries\ConditionEvaluator;
+use App\Libraries\FormulaEvaluator;
 use App\Libraries\SubmissionNotifier;
 use App\Models\FormFieldModel;
 use App\Models\FormModel;
@@ -17,6 +20,8 @@ class PublicFormController extends BaseController
     protected FormFieldModel $fieldModel;
     protected FormSubmissionModel $submissionModel;
     protected SubmissionDataModel $submissionDataModel;
+    protected ConditionEvaluator $conditions;
+    protected FormulaEvaluator $formula;
 
     public function __construct()
     {
@@ -24,6 +29,8 @@ class PublicFormController extends BaseController
         $this->fieldModel          = new FormFieldModel();
         $this->submissionModel     = new FormSubmissionModel();
         $this->submissionDataModel = new SubmissionDataModel();
+        $this->conditions          = new ConditionEvaluator();
+        $this->formula             = new FormulaEvaluator();
     }
 
     public function show(string $token): string
@@ -37,11 +44,33 @@ class PublicFormController extends BaseController
         $fields    = $this->fieldModel->getForForm($form['id']);
         $submitted = (bool) session()->getFlashdata('submitted');
 
+        // Booked slots per appointment field (for client-side disabling) and the
+        // slim per-field config the public JS needs for live conditional logic.
+        $bookedSlots = [];
+        $formConfig  = [];
+        foreach ($fields as $field) {
+            if ($field['field_type'] === 'appointment') {
+                $bookedSlots[$field['field_key']] = $this->submissionDataModel->getBookedSlots($form['id'], $field['field_key']);
+            }
+
+            $formConfig[] = [
+                'key'           => $field['field_key'],
+                'type'          => $field['field_type'],
+                'is_required'   => (bool) $field['is_required'],
+                'conditions'    => $field['conditions'] ?? null,
+                'option_values' => in_array($field['field_type'], FormFieldModel::OPTION_FIELD_TYPES, true)
+                    ? array_column($field['options'] ?? [], 'value')
+                    : [],
+            ];
+        }
+
         return view('public/show', [
-            'form'      => $form,
-            'fields'    => $fields,
-            'submitted' => $submitted,
-            'errors'    => session()->getFlashdata('errors') ?? [],
+            'form'        => $form,
+            'fields'      => $fields,
+            'submitted'   => $submitted,
+            'errors'      => session()->getFlashdata('errors') ?? [],
+            'bookedSlots' => $bookedSlots,
+            'formConfig'  => $formConfig,
         ]);
     }
 
@@ -65,6 +94,44 @@ class PublicFormController extends BaseController
         foreach ($fields as $field) {
             $key  = $field['field_key'];
             $type = $field['field_type'];
+
+            // Display-only fields are never stored.
+            if (in_array($type, FormFieldModel::DISPLAY_ONLY_TYPES, true)) {
+                continue;
+            }
+
+            // Server-side conditional logic (never trust the client). A hidden
+            // field is neither validated nor stored; requiredness is the
+            // effective value after evaluating any `require` rules.
+            $flags = $this->conditions->evaluate(
+                $field['conditions']['rules'] ?? [],
+                $postAnswers,
+                (bool) $field['is_required']
+            );
+            if (! $flags['visible']) {
+                continue;
+            }
+            // A disabled (read-only) field can't be filled by the visitor, so it
+            // is never treated as required regardless of its base/require rules.
+            $field['is_required'] = $flags['required'] && ! $flags['disabled'];
+
+            // Calculated fields: recompute server-side, ignore any client value.
+            if (! empty($field['conditions']['calc']['formula'])) {
+                $computed = $this->formula->evaluate($field['conditions']['calc']['formula'], $postAnswers);
+                $toSave[] = $this->answerRow($field, $computed !== '' ? $computed : null, null);
+
+                continue;
+            }
+
+            if ($type === 'appointment') {
+                [$value, $apptError] = $this->handleAppointmentField($form['id'], $field, (string) ($postAnswers[$key] ?? ''));
+                if ($apptError !== null) {
+                    $errors[$key] = $apptError;
+                }
+                $toSave[] = $this->answerRow($field, $value, null);
+
+                continue;
+            }
 
             if ($type === 'file') {
                 [$value, $filePath, $fileError] = $this->handleFileField($form['id'], $field);
@@ -216,5 +283,39 @@ class PublicFormController extends BaseController
         $relativePath = 'forms/' . $formId . '/' . $newName;
 
         return [$file->getClientName(), $relativePath, null];
+    }
+
+    /**
+     * Validate a chosen appointment slot against the field's availability config
+     * and re-check it isn't already booked. Stores the plain "Y-m-d H:i" string.
+     *
+     * @return array{0: ?string, 1: ?string} [value or null, error message or null]
+     */
+    private function handleAppointmentField(int $formId, array $field, string $value): array
+    {
+        $value  = trim($value);
+        $config = is_array($field['options'] ?? null) ? $field['options'] : [];
+
+        if ($value === '') {
+            return [null, $field['is_required'] ? $field['label'] . ' is required.' : null];
+        }
+
+        if (! AppointmentAvailability::isValidSlot($value, $config)) {
+            return [null, 'Please choose an available time slot for ' . $field['label'] . '.'];
+        }
+
+        // Reject past dates and dates beyond the booking window.
+        $slot  = \CodeIgniter\I18n\Time::createFromFormat('Y-m-d H:i', $value);
+        $today = \CodeIgniter\I18n\Time::today();
+        $maxDays = (int) ($config['date_max_days'] ?? AppointmentAvailability::DEFAULT_CONFIG['date_max_days']);
+        if ($slot->isBefore($today) || $slot->isAfter($today->addDays($maxDays)->setTime(23, 59, 59))) {
+            return [null, 'Please choose a date within the available range for ' . $field['label'] . '.'];
+        }
+
+        if (in_array($value, $this->submissionDataModel->getBookedSlots($formId, $field['field_key']), true)) {
+            return [null, 'That time slot for ' . $field['label'] . ' has just been booked. Please pick another.'];
+        }
+
+        return [$value, null];
     }
 }

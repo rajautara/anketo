@@ -55,8 +55,14 @@ class SubmissionController extends BaseController
 
     public function export(int $formId): ResponseInterface
     {
-        $form   = $this->findFormOrFail($formId);
-        $fields = $this->fieldModel->getForForm($form['id']);
+        $form = $this->findFormOrFail($formId);
+
+        // Display-only fields (e.g. paragraph) store no answer — exclude them so
+        // they don't produce empty CSV columns.
+        $fields = array_values(array_filter(
+            $this->fieldModel->getForForm($form['id']),
+            static fn ($f) => ! in_array($f['field_type'], FormFieldModel::DISPLAY_ONLY_TYPES, true)
+        ));
 
         $submissions = $this->submissionModel->getForForm($form['id']);
         $allAnswers  = $this->submissionDataModel->getForForm($form['id']);

@@ -75,4 +75,23 @@ class SubmissionDataModel extends Model
             ->orderBy('submission_data.id', 'ASC')
             ->findAll();
     }
+
+    /**
+     * Already-taken values for an appointment field on a form ("Y-m-d H:i"
+     * strings), used to block double-booking. Note: EAV storage means this is a
+     * best-effort read re-checked at submit time (a small TOCTOU window remains).
+     *
+     * @return list<string>
+     */
+    public function getBookedSlots(int $formId, string $fieldKey): array
+    {
+        $rows = $this->select('submission_data.value')
+            ->join('form_submissions', 'form_submissions.id = submission_data.submission_id')
+            ->where('form_submissions.form_id', $formId)
+            ->where('submission_data.field_key', $fieldKey)
+            ->where('submission_data.value IS NOT NULL')
+            ->findAll();
+
+        return array_values(array_filter(array_column($rows, 'value'), static fn ($v) => $v !== null && $v !== ''));
+    }
 }
