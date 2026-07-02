@@ -1,0 +1,59 @@
+# ============================================================
+# AnkeTo - CodeIgniter 4 .gitignore
+# ============================================================
+
+# Environment & Secrets
+env
+.env
+.env.*
+!.env.example
+
+# Composer dependencies
+vendor/
+
+# CodeIgniter writable directories
+writable/cache/*
+writable/logs/*
+writable/session/*
+writable/uploads/*
+writable/debugbar/*
+!writable/cache/.gitkeep
+!writable/logs/.gitkeep
+!writable/session/.gitkeep
+!writable/uploads/.gitkeep
+
+# CodeIgniter test caches
+build/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# IDE / Editor files
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+*.swp
+*.swo
+*~
+
+# PHP specific
+*.log
+*.cache
+
+# Node (if any frontend tooling is used)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Distribution / build output
+dist/
+public/uploads/
