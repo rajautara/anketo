@@ -4,6 +4,7 @@ namespace App\Controllers;
 
 use App\Libraries\ConditionEvaluator;
 use App\Libraries\ProductList;
+use App\Libraries\ValueUpdateEvaluator;
 use App\Models\FormFieldModel;
 use App\Models\FormModel;
 use CodeIgniter\Exceptions\PageNotFoundException;
@@ -110,7 +111,7 @@ class FormFieldController extends BaseController
             'options'          => $options,
             'is_required'      => $fieldType === 'page_break' ? false : (bool) ($body['is_required'] ?? false),
             'validation_rules' => $fieldType === 'page_break' ? null : ($body['validation_rules'] ?? null),
-            'conditions'       => $fieldType === 'page_break' ? null : $this->sanitizeConditions($form['id'], $fieldKey, $body['conditions'] ?? null),
+            'conditions'       => $fieldType === 'page_break' ? null : $this->sanitizeConditions($form['id'], $fieldKey, $fieldType, $body['conditions'] ?? null),
         ]);
 
         return $this->response->setJSON($this->fieldModel->find($fieldId));
@@ -290,13 +291,18 @@ class FormFieldController extends BaseController
      * reference unknown or self fields, unknown actions/operators, and keeps
      * only a plain-string calc formula (re-validated at evaluation time).
      */
-    private function sanitizeConditions(int $formId, string $selfKey, $raw): ?array
+    private function sanitizeConditions(int $formId, string $selfKey, string $selfType, $raw): ?array
     {
         if (! is_array($raw)) {
             return null;
         }
 
-        $validKeys = array_column($this->fieldModel->getForForm($formId), 'field_key');
+        $fields = $this->fieldModel->getForForm($formId);
+        $validKeys = array_column($fields, 'field_key');
+        $fieldsByKey = [];
+        foreach ($fields as $field) {
+            $fieldsByKey[$field['field_key']] = $field;
+        }
 
         $rules = [];
         foreach (is_array($raw['rules'] ?? null) ? $raw['rules'] : [] as $rule) {
@@ -344,6 +350,96 @@ class FormFieldController extends BaseController
             $out['calc'] = ['formula' => $formula];
         }
 
+        $updates = $this->sanitizeValueUpdates($raw['updates'] ?? null, $selfKey, $selfType, $fieldsByKey);
+        if ($updates !== []) {
+            $out['updates'] = $updates;
+        }
+
         return $out === [] ? null : $out;
+    }
+
+    /**
+     * @param array<string,array<string,mixed>> $fieldsByKey
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    private function sanitizeValueUpdates($rawUpdates, string $selfKey, string $selfType, array $fieldsByKey): array
+    {
+        if (! in_array($selfType, ['text', 'email', 'number', 'textarea', 'date'], true) || ! is_array($rawUpdates)) {
+            return [];
+        }
+
+        $updates = [];
+        foreach ($rawUpdates as $rule) {
+            if (! is_array($rule) || ! in_array($rule['action'] ?? '', ValueUpdateEvaluator::ACTIONS, true)) {
+                continue;
+            }
+
+            $when = [];
+            foreach (is_array($rule['when'] ?? null) ? $rule['when'] : [] as $cond) {
+                if (! is_array($cond)) {
+                    continue;
+                }
+
+                $field = (string) ($cond['field'] ?? '');
+                $op    = (string) ($cond['operator'] ?? '');
+                if (! $this->isUsableReferencedField($field, $selfKey, $fieldsByKey)
+                    || ! in_array($op, ConditionEvaluator::OPERATORS, true)) {
+                    continue;
+                }
+
+                $when[] = [
+                    'field'    => $field,
+                    'operator' => $op,
+                    'value'    => (string) ($cond['value'] ?? ''),
+                ];
+            }
+
+            if ($when === []) {
+                continue;
+            }
+
+            $action = (string) $rule['action'];
+            $clean = [
+                'match'  => ($rule['match'] ?? 'all') === 'any' ? 'any' : 'all',
+                'when'   => $when,
+                'action' => $action,
+            ];
+
+            if ($action === 'copy') {
+                $source = (string) ($rule['source'] ?? '');
+                if (! $this->isUsableReferencedField($source, $selfKey, $fieldsByKey)) {
+                    continue;
+                }
+                $clean['source'] = $source;
+            } elseif ($action === 'set') {
+                $clean['value'] = (string) ($rule['value'] ?? '');
+            } elseif ($action === 'calculate') {
+                if (! in_array($selfType, ['text', 'number'], true)) {
+                    continue;
+                }
+                $formula = trim((string) ($rule['formula'] ?? ''));
+                if ($formula === '') {
+                    continue;
+                }
+                $clean['formula'] = $formula;
+            }
+
+            $updates[] = $clean;
+        }
+
+        return $updates;
+    }
+
+    /**
+     * @param array<string,array<string,mixed>> $fieldsByKey
+     */
+    private function isUsableReferencedField(string $fieldKey, string $selfKey, array $fieldsByKey): bool
+    {
+        if ($fieldKey === '' || $fieldKey === $selfKey || ! isset($fieldsByKey[$fieldKey])) {
+            return false;
+        }
+
+        return ! in_array($fieldsByKey[$fieldKey]['field_type'] ?? '', FormFieldModel::DISPLAY_ONLY_TYPES, true);
     }
 }

@@ -27,13 +27,9 @@
                                     <a href="<?= site_url('forms/' . $form['id'] . '/submissions/' . $submission['id'] . '/files/' . $answer['id']) ?>" class="d-inline-flex align-items-center gap-1">
                                         <i class="bi bi-paperclip"></i> <?= esc($answer['value'] ?: 'Download file') ?>
                                     </a>
-                                <?php elseif (($productAnswer = \App\Libraries\ProductList::formatAnswer($answer['value'])) !== null) : ?>
-                                    <?= $productAnswer !== '' ? esc($productAnswer) : '<span class="text-muted">&mdash;</span>' ?>
-                                <?php elseif ($answer['value'] !== null && str_starts_with(trim($answer['value']), '[')) : ?>
-                                    <?php $decoded = json_decode($answer['value'], true); ?>
-                                    <?= is_array($decoded) ? esc(implode(', ', $decoded)) : esc($answer['value']) ?>
                                 <?php else : ?>
-                                    <?= $answer['value'] !== null && $answer['value'] !== '' ? nl2br(esc($answer['value'])) : '<span class="text-muted">&mdash;</span>' ?>
+                                    <?php $displayValue = $answerFormatter->format($answer, $fieldsByKey[$answer['field_key']] ?? null); ?>
+                                    <?= $displayValue !== '' ? nl2br(esc($displayValue)) : '<span class="text-muted">&mdash;</span>' ?>
                                 <?php endif ?>
                             </dd>
                         </div>

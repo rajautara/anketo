@@ -140,6 +140,115 @@
 /* ---- Field properties (modal body) ----------------------------------------*/
 #properties-form .form-label { font-size: .78rem; text-transform: uppercase; letter-spacing: .04em; color: var(--ak-text-muted); margin-bottom: .25rem; }
 #properties-form .option-row { margin-bottom: .4rem; }
+.akc-value-wrap { display: contents; }
+.akc-value-wrap.d-none { display: none !important; }
+
+.akcu-panel {
+    position: relative;
+    margin: .25rem 0 1rem;
+    padding: .85rem;
+    border-radius: var(--ak-radius-sm);
+    background: #f1f2ff;
+}
+.akcu-title {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    margin-bottom: .9rem;
+}
+.akcu-title h6 {
+    margin: 0;
+    color: #001a64;
+    font-size: .86rem;
+    font-weight: 800;
+    letter-spacing: .02em;
+}
+.akcu-title p {
+    margin: .15rem 0 0;
+    color: #58659f;
+    font-size: .82rem;
+}
+.akcu-icon {
+    width: 2.35rem;
+    height: 2.35rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    border-radius: .35rem;
+    background: var(--ak-primary);
+    color: #fff;
+    font-size: 1.1rem;
+}
+.akcu-rules {
+    display: flex;
+    flex-direction: column;
+    gap: .75rem;
+}
+.akcu-rule {
+    border-left: .3rem solid var(--ak-primary);
+    background: #fff;
+    padding: .85rem 1rem;
+}
+.akcu-rule-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: .65rem;
+    color: var(--ak-text-muted);
+    font-size: .75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+.akcu-condition,
+.akcu-action {
+    display: flex;
+    flex-direction: column;
+    gap: .55rem;
+}
+.akcu-action {
+    margin-top: .8rem;
+    padding-top: .8rem;
+    border-top: 1px solid var(--ak-border);
+}
+.akcu-row {
+    display: grid;
+    grid-template-columns: 9rem minmax(0, 1fr);
+    gap: .75rem;
+    align-items: center;
+}
+.akcu-row label {
+    margin: 0;
+    color: var(--ak-text);
+    font-size: .78rem;
+    font-weight: 800;
+    letter-spacing: .02em;
+}
+.akcu-add-rule {
+    position: absolute;
+    right: -2.8rem;
+    top: 5rem;
+    width: 2.2rem;
+    height: 2.2rem;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+@media (max-width: 991.98px) {
+    .akcu-add-rule {
+        position: static;
+        margin-top: .75rem;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .akcu-row {
+        grid-template-columns: 1fr;
+        gap: .25rem;
+    }
+}
 
 .ak-products-list {
     display: flex;

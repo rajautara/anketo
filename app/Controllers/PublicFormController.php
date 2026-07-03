@@ -6,7 +6,9 @@ use App\Libraries\AppointmentAvailability;
 use App\Libraries\ConditionEvaluator;
 use App\Libraries\FormulaEvaluator;
 use App\Libraries\ProductList;
+use App\Libraries\SubmissionAnswerFormatter;
 use App\Libraries\SubmissionNotifier;
+use App\Libraries\ValueUpdateEvaluator;
 use App\Models\FormFieldModel;
 use App\Models\FormModel;
 use App\Models\FormSubmissionModel;
@@ -23,6 +25,8 @@ class PublicFormController extends BaseController
     protected SubmissionDataModel $submissionDataModel;
     protected ConditionEvaluator $conditions;
     protected FormulaEvaluator $formula;
+    protected ValueUpdateEvaluator $updates;
+    protected SubmissionAnswerFormatter $answerFormatter;
 
     public function __construct()
     {
@@ -32,6 +36,8 @@ class PublicFormController extends BaseController
         $this->submissionDataModel = new SubmissionDataModel();
         $this->conditions          = new ConditionEvaluator();
         $this->formula             = new FormulaEvaluator();
+        $this->updates             = new ValueUpdateEvaluator($this->conditions, $this->formula);
+        $this->answerFormatter     = new SubmissionAnswerFormatter();
     }
 
     public function show(string $token): string
@@ -60,11 +66,15 @@ class PublicFormController extends BaseController
 
             $formConfig[] = [
                 'key'           => $field['field_key'],
+                'label'         => $field['label'],
                 'type'          => $field['field_type'],
                 'is_required'   => (bool) $field['is_required'],
                 'conditions'    => $field['conditions'] ?? null,
                 'option_values' => in_array($field['field_type'], FormFieldModel::OPTION_FIELD_TYPES, true)
                     ? array_column($field['options'] ?? [], 'value')
+                    : [],
+                'option_labels' => in_array($field['field_type'], FormFieldModel::OPTION_FIELD_TYPES, true)
+                    ? $this->optionLabelMap($field)
                     : [],
             ];
         }
@@ -129,6 +139,7 @@ class PublicFormController extends BaseController
         $fields      = $this->fieldModel->getForForm($form['id']);
         $postAnswers = $this->request->getPost('answers');
         $postAnswers = is_array($postAnswers) ? $postAnswers : [];
+        $formulaAnswers = $this->formulaAnswers($fields, $postAnswers);
 
         $errors = [];
         $toSave = [];
@@ -158,9 +169,24 @@ class PublicFormController extends BaseController
             // is never treated as required regardless of its base/require rules.
             $field['is_required'] = $flags['required'] && ! $flags['disabled'];
 
+            // Automated update fields: recompute server-side and ignore any
+            // client-submitted value. Updates supersede legacy calc formulas.
+            if (! empty($field['conditions']['updates']) && $this->isValueUpdateTarget($type)) {
+                $computed = $this->updates->evaluate($field['conditions']['updates'], $postAnswers, $formulaAnswers);
+                if ($computed !== null && $computed !== '') {
+                    $fieldError = $this->validateScalarField($field, $computed);
+                    if ($fieldError !== null) {
+                        $errors[$key] = $fieldError;
+                    }
+                }
+                $toSave[] = $this->answerRow($field, ($computed !== null && $computed !== '') ? $computed : null, null);
+
+                continue;
+            }
+
             // Calculated fields: recompute server-side, ignore any client value.
             if (! empty($field['conditions']['calc']['formula'])) {
-                $computed = $this->formula->evaluate($field['conditions']['calc']['formula'], $postAnswers);
+                $computed = $this->formula->evaluate($field['conditions']['calc']['formula'], $formulaAnswers);
                 $toSave[] = $this->answerRow($field, $computed !== '' ? $computed : null, null);
 
                 continue;
@@ -216,7 +242,7 @@ class PublicFormController extends BaseController
                 $errors[$key] = $fieldError;
             }
 
-            $toSave[] = $this->answerRow($field, $raw !== '' ? $raw : null, null);
+            $toSave[] = $this->answerRow($field, $this->answerFormatter->storedValueForField($field, $raw), null);
         }
 
         if ($errors !== []) {
@@ -366,6 +392,67 @@ class PublicFormController extends BaseController
         return null;
     }
 
+    private function isValueUpdateTarget(string $type): bool
+    {
+        return in_array($type, ['text', 'email', 'number', 'textarea', 'date'], true);
+    }
+
+    /**
+     * Formula fields should see choice labels, not generated internal values
+     * like option_1. Condition matching still uses the raw submitted values.
+     *
+     * @param array<int,array<string,mixed>> $fields
+     * @param array<string,mixed>            $answers
+     *
+     * @return array<string,mixed>
+     */
+    private function formulaAnswers(array $fields, array $answers): array
+    {
+        $out = $answers;
+
+        foreach ($fields as $field) {
+            $key = (string) ($field['field_key'] ?? '');
+            if ($key === '' || ! isset($answers[$key])) {
+                continue;
+            }
+
+            $value = $answers[$key];
+            if (! in_array($field['field_type'] ?? '', ['radio', 'select'], true)) {
+                $out[(string) ($field['label'] ?? '')] = $value;
+                continue;
+            }
+
+            if (is_array($value)) {
+                continue;
+            }
+
+            $labels = $this->optionLabelMap($field);
+            $displayValue = $labels[(string) $value] ?? $value;
+            $out[$key] = $displayValue;
+            $out[(string) ($field['label'] ?? '')] = $displayValue;
+        }
+
+        return $out;
+    }
+
+    /**
+     * @return array<string,string> option value => option label
+     */
+    private function optionLabelMap(array $field): array
+    {
+        $map = [];
+
+        foreach (is_array($field['options'] ?? null) ? $field['options'] : [] as $option) {
+            if (! is_array($option) || ! isset($option['value'], $option['label'])) {
+                continue;
+            }
+
+            $map[(string) $option['value']] = (string) $option['label'];
+        }
+
+        return $map;
+    }
+
     /**
      * @return array{0: ?string, 1: ?string} [json-encoded selected values or null, error message or null]
      */
@@ -379,7 +466,7 @@ class PublicFormController extends BaseController
             return [null, $field['label'] . ' is required.'];
         }
 
-        return [$selected === [] ? null : json_encode($selected), null];
+        return [$this->answerFormatter->storedValueForField($field, $selected), null];
     }
 
     /**

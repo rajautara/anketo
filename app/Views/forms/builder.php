@@ -143,13 +143,15 @@
     var FIELDS = {};
     function registerField(field) { FIELDS[field.id] = field; }
     function unregisterField(id) { delete FIELDS[id]; }
-    // Fields eligible as condition sources / calc tokens: exclude self, paragraphs, and calc targets.
+    // Fields eligible as condition sources / update tokens: exclude self, display-only fields, and automated targets.
     function otherFieldsFor(current) {
         return Object.keys(FIELDS).map(function (id) { return FIELDS[id]; }).filter(function (f) {
+            var c = f.conditions || {};
             return String(f.id) !== String(current.id)
                 && f.field_type !== 'paragraph'
                 && f.field_type !== 'page_break'
-                && !(f.conditions && f.conditions.calc && f.conditions.calc.formula);
+                && !(c.calc && c.calc.formula)
+                && !(Array.isArray(c.updates) && c.updates.length);
         }).map(function (f) {
             return { key: f.field_key, label: f.label, type: f.field_type, options: Array.isArray(f.options) ? f.options : [] };
         });

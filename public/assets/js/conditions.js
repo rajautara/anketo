@@ -51,6 +51,29 @@
         return answers;
     }
 
+    function formulaAnswers(rawAnswers) {
+        var out = Object.assign({}, rawAnswers);
+
+        configs.forEach(function (c) {
+            var value = rawAnswers[c.key];
+            if (Array.isArray(value) || value == null) { return; }
+
+            if (['radio', 'select'].indexOf(c.type) === -1) {
+                if (c.label) { out[c.label] = value; }
+                return;
+            }
+
+            var labels = c.option_labels || {};
+            var displayValue = Object.prototype.hasOwnProperty.call(labels, String(value))
+                ? labels[String(value)]
+                : value;
+            out[c.key] = displayValue;
+            if (c.label) { out[c.label] = displayValue; }
+        });
+
+        return out;
+    }
+
     // ---- compare() — mirror of ConditionEvaluator::compare ------------------
     function isNumeric(v) { return v !== '' && v !== null && !isNaN(v) && isFinite(v); }
 
@@ -199,11 +222,48 @@
         return st.length === 1 ? st[0] : null;
     }
 
+    function evalUpdates(updates, answers, calcAnswers) {
+        if (!Array.isArray(updates)) { return null; }
+        calcAnswers = calcAnswers || answers;
+
+        for (var i = 0; i < updates.length; i++) {
+            var rule = updates[i];
+            if (!rule || !groupMatches(rule, answers)) { continue; }
+
+            if (rule.action === 'copy') {
+                var copied = answers[rule.source];
+                return Array.isArray(copied) || copied == null ? null : String(copied);
+            }
+            if (rule.action === 'set') {
+                return String(rule.value == null ? '' : rule.value);
+            }
+            if (rule.action === 'calculate') {
+                var result = evalFormula(rule.formula || '', calcAnswers);
+                return result === '' ? null : result;
+            }
+        }
+
+        return null;
+    }
+
     // ---- apply state to the DOM --------------------------------------------
     function controls(wrap) { return wrap ? wrap.querySelectorAll('input, select, textarea') : []; }
 
+    function primaryControl(wrap) {
+        return wrap ? wrap.querySelector('input, select, textarea') : null;
+    }
+
+    function hasUpdates(c) {
+        return !!(c.conditions && Array.isArray(c.conditions.updates) && c.conditions.updates.length);
+    }
+
+    function hasLegacyCalc(c) {
+        return !!(c.conditions && c.conditions.calc && c.conditions.calc.formula);
+    }
+
     function apply() {
         var answers = collectAnswers();
+        var calcAnswers = formulaAnswers(answers);
 
         configs.forEach(function (c) {
             var wrap = wrapperFor(c.key);
@@ -220,6 +280,24 @@
                 if (star) { star.classList.remove('d-none'); }
             } else if (star) {
                 star.classList.add('d-none');
+            }
+
+            var automated = false;
+            if (flags.visible && hasUpdates(c)) {
+                var updatedValue = evalUpdates(c.conditions.updates, answers, calcAnswers);
+                var updateInput = primaryControl(wrap);
+                var updateText = updatedValue == null ? '' : String(updatedValue);
+                if (updateInput) { updateInput.value = updateText; }
+                answers[c.key] = updateText;
+                calcAnswers[c.key] = updateText;
+                automated = true;
+            } else if (flags.visible && hasLegacyCalc(c)) {
+                var calcValue = evalFormula(c.conditions.calc.formula, calcAnswers);
+                var calcInput = primaryControl(wrap);
+                if (calcInput) { calcInput.value = calcValue; }
+                answers[c.key] = calcValue;
+                calcAnswers[c.key] = calcValue;
+                automated = true;
             }
 
             Array.prototype.forEach.call(controls(wrap), function (el) {
@@ -239,22 +317,15 @@
                     return;
                 }
                 // visible again
-                var isCalc = c.conditions && c.conditions.calc && c.conditions.calc.formula;
                 el.disabled = false;
-                el.required = flags.required && !isCalc && el.type !== 'hidden' && c.type !== 'product_list';
-                if (flags.disabled || isCalc) {
+                el.required = flags.required && !automated && el.type !== 'hidden' && c.type !== 'product_list';
+                if (flags.disabled || automated) {
                     el.readOnly = (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA');
                     if (el.tagName === 'SELECT') { el.disabled = true; }
                 } else {
                     el.readOnly = false;
                 }
             });
-
-            // Calculated value (server recomputes authoritatively).
-            if (flags.visible && c.conditions && c.conditions.calc && c.conditions.calc.formula) {
-                var input = wrap.querySelector('input');
-                if (input) { input.value = evalFormula(c.conditions.calc.formula, answers); }
-            }
         });
     }
 

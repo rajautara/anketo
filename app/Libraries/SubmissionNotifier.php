@@ -91,17 +91,10 @@ class SubmissionNotifier
             return ['label' => $label, 'value' => (string) ($row['value'] ?? '(file)'), 'isFile' => true];
         }
 
-        $value = $row['value'];
-        $productAnswer = ProductList::formatAnswer($value);
-        if ($productAnswer !== null) {
-            $value = $productAnswer;
-        } elseif ($value !== null && str_starts_with(trim($value), '[')) {
-            $decoded = json_decode($value, true);
-            if (is_array($decoded)) {
-                $value = implode(', ', $decoded);
-            }
-        }
-
-        return ['label' => $label, 'value' => (string) ($value ?? ''), 'isFile' => false];
+        return [
+            'label'  => $label,
+            'value'  => (new SubmissionAnswerFormatter())->format($row),
+            'isFile' => false,
+        ];
     }
 }

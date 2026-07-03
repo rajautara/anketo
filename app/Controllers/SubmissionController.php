@@ -2,7 +2,7 @@
 
 namespace App\Controllers;
 
-use App\Libraries\ProductList;
+use App\Libraries\SubmissionAnswerFormatter;
 use App\Models\FormFieldModel;
 use App\Models\FormModel;
 use App\Models\FormSubmissionModel;
@@ -16,6 +16,7 @@ class SubmissionController extends BaseController
     protected FormFieldModel $fieldModel;
     protected FormSubmissionModel $submissionModel;
     protected SubmissionDataModel $submissionDataModel;
+    protected SubmissionAnswerFormatter $answerFormatter;
 
     public function __construct()
     {
@@ -23,6 +24,7 @@ class SubmissionController extends BaseController
         $this->fieldModel          = new FormFieldModel();
         $this->submissionModel     = new FormSubmissionModel();
         $this->submissionDataModel = new SubmissionDataModel();
+        $this->answerFormatter     = new SubmissionAnswerFormatter();
     }
 
     public function index(int $formId): string
@@ -30,10 +32,12 @@ class SubmissionController extends BaseController
         $form = $this->findFormOrFail($formId);
 
         // Columns = the form's input fields (display-only types store no value).
+        $formFields = $this->fieldModel->getForForm($form['id']);
         $columns = array_values(array_filter(
-            $this->fieldModel->getForForm($form['id']),
+            $formFields,
             static fn ($f) => ! in_array($f['field_type'], FormFieldModel::DISPLAY_ONLY_TYPES, true)
         ));
+        $fieldsByKey = $this->fieldsByKey($formFields);
 
         $submissions = $this->submissionModel
             ->where('form_id', $form['id'])
@@ -55,6 +59,8 @@ class SubmissionController extends BaseController
             'columns'     => $columns,
             'submissions' => $submissions,
             'answersById' => $answersById,
+            'fieldsByKey' => $fieldsByKey,
+            'answerFormatter' => $this->answerFormatter,
             'pager'       => $this->submissionModel->pager,
         ]);
     }
@@ -64,11 +70,14 @@ class SubmissionController extends BaseController
         $form       = $this->findFormOrFail($formId);
         $submission = $this->findSubmissionOrFail($form['id'], $submissionId);
         $answers    = $this->submissionDataModel->getForSubmission($submission['id']);
+        $fieldsByKey = $this->fieldsByKey($this->fieldModel->getForForm($form['id']));
 
         return view('submissions/show', [
             'form'       => $form,
             'submission' => $submission,
             'answers'    => $answers,
+            'fieldsByKey' => $fieldsByKey,
+            'answerFormatter' => $this->answerFormatter,
         ]);
     }
 
@@ -78,10 +87,12 @@ class SubmissionController extends BaseController
 
         // Display-only fields (e.g. paragraph) store no answer — exclude them so
         // they don't produce empty CSV columns.
+        $formFields = $this->fieldModel->getForForm($form['id']);
         $fields = array_values(array_filter(
-            $this->fieldModel->getForForm($form['id']),
+            $formFields,
             static fn ($f) => ! in_array($f['field_type'], FormFieldModel::DISPLAY_ONLY_TYPES, true)
         ));
+        $fieldsByKey = $this->fieldsByKey($formFields);
 
         $submissions = $this->submissionModel->getForForm($form['id']);
         $allAnswers  = $this->submissionDataModel->getForForm($form['id']);
@@ -104,7 +115,7 @@ class SubmissionController extends BaseController
 
             foreach ($fields as $field) {
                 $answer = $answersBySubmission[$submission['id']][$field['field_key']] ?? null;
-                $row[]  = $this->formatAnswerForCsv($answer);
+                $row[]  = $this->answerFormatter->format($answer, $fieldsByKey[$field['field_key']] ?? null);
             }
 
             fputcsv($buffer, $row);
@@ -146,29 +157,19 @@ class SubmissionController extends BaseController
         return $this->response->download($originalName, file_get_contents($path));
     }
 
-    private function formatAnswerForCsv(?array $answer): string
+    /**
+     * @param array<int,array<string,mixed>> $fields
+     *
+     * @return array<string,array<string,mixed>>
+     */
+    private function fieldsByKey(array $fields): array
     {
-        if ($answer === null) {
-            return '';
+        $out = [];
+        foreach ($fields as $field) {
+            $out[(string) $field['field_key']] = $field;
         }
 
-        if (! empty($answer['file_path'])) {
-            return $answer['value'] ?? $answer['file_path'];
-        }
-
-        $productAnswer = ProductList::formatAnswer($answer['value']);
-        if ($productAnswer !== null) {
-            return $productAnswer;
-        }
-
-        if ($answer['value'] !== null && str_starts_with(trim($answer['value']), '[')) {
-            $decoded = json_decode($answer['value'], true);
-            if (is_array($decoded)) {
-                return implode(', ', $decoded);
-            }
-        }
-
-        return (string) ($answer['value'] ?? '');
+        return $out;
     }
 
     private function findFormOrFail(int $id): array
