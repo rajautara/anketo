@@ -54,6 +54,10 @@ class PublicFormController extends BaseController
                 $bookedSlots[$field['field_key']] = $this->submissionDataModel->getBookedSlots($form['id'], $field['field_key']);
             }
 
+            if ($field['field_type'] === 'page_break') {
+                continue;
+            }
+
             $formConfig[] = [
                 'key'           => $field['field_key'],
                 'type'          => $field['field_type'],

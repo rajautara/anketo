@@ -30,33 +30,74 @@
 
             <?php
                 $hasFileField = false;
+                $pages = [['title' => 'Page 1', 'fields' => []]];
                 foreach ($fields as $f) {
                     if ($f['field_type'] === 'file') {
                         $hasFileField = true;
-                        break;
                     }
+
+                    if ($f['field_type'] === 'page_break') {
+                        $title = trim((string) ($f['label'] ?? ''));
+                        $title = $title !== '' ? $title : 'Page ' . (count($pages) + 1);
+                        $currentIndex = count($pages) - 1;
+
+                        if (empty($pages[$currentIndex]['fields'])) {
+                            $pages[$currentIndex]['title'] = $title;
+                        } else {
+                            $pages[] = ['title' => $title, 'fields' => []];
+                        }
+
+                        continue;
+                    }
+
+                    $pages[count($pages) - 1]['fields'][] = $f;
                 }
+
+                $pages = array_values(array_filter($pages, static fn ($page) => ! empty($page['fields'])));
+                if ($pages === []) {
+                    $pages = [['title' => 'Page 1', 'fields' => []]];
+                }
+
+                $hasRenderableFields = ! empty($pages[0]['fields']);
+                $isPagedForm = count($pages) > 1;
             ?>
 
-            <form action="<?= site_url('f/' . $form['share_token']) ?>" method="post"<?= $hasFileField ? ' enctype="multipart/form-data"' : '' ?>>
+            <form action="<?= site_url('f/' . $form['share_token']) ?>" method="post"<?= $hasFileField ? ' enctype="multipart/form-data"' : '' ?><?= $isPagedForm ? ' data-ak-paged-form' : '' ?>>
                 <?= csrf_field() ?>
 
-                <?php foreach ($fields as $field) : ?>
-                    <div class="ak-field" data-field-key="<?= esc($field['field_key'], 'attr') ?>" data-field-type="<?= esc($field['field_type'], 'attr') ?>">
-                        <?= view('public/fields/' . $field['field_type'], [
-                            'field'       => $field,
-                            'fieldError'  => $errors[$field['field_key']] ?? null,
-                            'bookedSlots' => $bookedSlots ?? [],
-                        ]) ?>
-                    </div>
+                <?php foreach ($pages as $pageIndex => $page) : ?>
+                    <section class="ak-form-page" data-ak-form-page="<?= $pageIndex ?>">
+                        <?php if ($isPagedForm) : ?>
+                            <div class="ak-page-step">
+                                <span>Step <?= $pageIndex + 1 ?> of <?= count($pages) ?></span>
+                                <h2><?= esc($page['title']) ?></h2>
+                            </div>
+                        <?php endif ?>
+
+                        <?php foreach ($page['fields'] as $field) : ?>
+                            <div class="ak-field" data-field-key="<?= esc($field['field_key'], 'attr') ?>" data-field-type="<?= esc($field['field_type'], 'attr') ?>">
+                                <?= view('public/fields/' . $field['field_type'], [
+                                    'field'       => $field,
+                                    'fieldError'  => $errors[$field['field_key']] ?? null,
+                                    'bookedSlots' => $bookedSlots ?? [],
+                                ]) ?>
+                            </div>
+                        <?php endforeach ?>
+                    </section>
                 <?php endforeach ?>
 
-                <?php if (empty($fields)) : ?>
+                <?php if (! $hasRenderableFields) : ?>
                     <p class="text-muted mb-0">This form has no fields yet.</p>
                 <?php else : ?>
-                    <button type="submit" class="btn btn-primary btn-lg w-100 mt-2">
-                        <?= esc($form['submit_button_text'] ?: 'Submit') ?>
-                    </button>
+                    <div class="<?= $isPagedForm ? 'ak-page-actions' : '' ?>">
+                        <?php if ($isPagedForm) : ?>
+                            <button type="button" class="btn btn-outline-secondary btn-lg d-none" data-ak-page-back>Back</button>
+                            <button type="button" class="btn btn-primary btn-lg d-none" data-ak-page-next>Next</button>
+                        <?php endif ?>
+                        <button type="submit" class="btn btn-primary btn-lg<?= $isPagedForm ? '' : ' w-100 mt-2' ?>" data-ak-page-submit>
+                            <?= esc($form['submit_button_text'] ?: 'Submit') ?>
+                        </button>
+                    </div>
                 <?php endif ?>
             </form>
         </div>
@@ -70,6 +111,7 @@
 
 <?= $this->section('pageScripts') ?>
 <script src="<?= base_url('assets/js/conditions.js') ?>?v=<?= filemtime(FCPATH . 'assets/js/conditions.js') ?>"></script>
+<script src="<?= base_url('assets/js/page-breaks.js') ?>?v=<?= filemtime(FCPATH . 'assets/js/page-breaks.js') ?>"></script>
 <script src="<?= base_url('assets/js/appointment.js') ?>?v=<?= filemtime(FCPATH . 'assets/js/appointment.js') ?>"></script>
 <script src="<?= base_url('assets/js/product-list.js') ?>?v=<?= filemtime(FCPATH . 'assets/js/product-list.js') ?>"></script>
 <?= $this->endSection() ?>

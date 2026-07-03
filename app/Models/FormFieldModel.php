@@ -38,18 +38,18 @@ class FormFieldModel extends Model
     ];
 
     protected $validationRules = [
-        'field_type' => 'required|in_list[text,email,number,textarea,checkbox,radio,select,date,file,paragraph,appointment,product_list]',
+        'field_type' => 'required|in_list[text,email,number,textarea,checkbox,radio,select,date,file,paragraph,page_break,appointment,product_list]',
         'label'      => 'required|max_length[255]',
         'field_key'  => 'required|max_length[100]',
     ];
 
-    public const FIELD_TYPES = ['text', 'email', 'number', 'textarea', 'checkbox', 'radio', 'select', 'date', 'file', 'paragraph', 'appointment', 'product_list'];
+    public const FIELD_TYPES = ['text', 'email', 'number', 'textarea', 'checkbox', 'radio', 'select', 'date', 'file', 'paragraph', 'page_break', 'appointment', 'product_list'];
 
     /** Field types that use an `options` list of {value,label} choices. */
     public const OPTION_FIELD_TYPES = ['checkbox', 'radio', 'select'];
 
     /** Display-only types: render no input, store no answer, excluded from CSV columns. */
-    public const DISPLAY_ONLY_TYPES = ['paragraph'];
+    public const DISPLAY_ONLY_TYPES = ['paragraph', 'page_break'];
 
     /** Types whose `options` JSON holds a config object (not a {value,label} choice list). */
     public const CONFIG_FIELD_TYPES = ['appointment', 'product_list'];
@@ -126,6 +126,7 @@ class FormFieldModel extends Model
             'date'     => 'Date',
             'file'     => 'File Upload',
             'paragraph'   => 'Paragraph',
+            'page_break'  => 'Page Break',
             'appointment' => 'Appointment',
             'product_list' => 'Product List',
         ];

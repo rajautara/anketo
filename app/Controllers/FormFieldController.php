@@ -59,8 +59,10 @@ class FormFieldController extends BaseController
         $body  = $this->request->getJSON(true) ?? [];
 
         $label     = trim((string) ($body['label'] ?? $field['label']));
-        $fieldKey  = trim((string) ($body['field_key'] ?? $field['field_key']));
         $fieldType = $field['field_type'];
+        $fieldKey  = $fieldType === 'page_break'
+            ? (string) $field['field_key']
+            : trim((string) ($body['field_key'] ?? $field['field_key']));
 
         if ($label === '') {
             return $this->response->setStatusCode(422)->setJSON(['error' => 'Label is required.']);
@@ -82,7 +84,9 @@ class FormFieldController extends BaseController
         // Options is a per-type config store. Each type shapes it differently —
         // NEVER run appointment/paragraph config through the {value,label} filter
         // (it would strip the config object to []).
-        if (in_array($fieldType, FormFieldModel::OPTION_FIELD_TYPES, true)) {
+        if ($fieldType === 'page_break') {
+            $options = null;
+        } elseif (in_array($fieldType, FormFieldModel::OPTION_FIELD_TYPES, true)) {
             $options = array_values(array_filter(
                 is_array($body['options'] ?? null) ? $body['options'] : [],
                 static fn ($opt) => isset($opt['value'], $opt['label']) && trim((string) $opt['label']) !== ''
@@ -101,12 +105,12 @@ class FormFieldController extends BaseController
         $this->fieldModel->update($fieldId, [
             'label'            => $label,
             'field_key'        => $fieldKey,
-            'placeholder'      => ($body['placeholder'] ?? '') !== '' ? $body['placeholder'] : null,
-            'help_text'        => ($body['help_text'] ?? '') !== '' ? $body['help_text'] : null,
+            'placeholder'      => $fieldType === 'page_break' ? null : (($body['placeholder'] ?? '') !== '' ? $body['placeholder'] : null),
+            'help_text'        => $fieldType === 'page_break' ? null : (($body['help_text'] ?? '') !== '' ? $body['help_text'] : null),
             'options'          => $options,
-            'is_required'      => (bool) ($body['is_required'] ?? false),
-            'validation_rules' => $body['validation_rules'] ?? null,
-            'conditions'       => $this->sanitizeConditions($form['id'], $fieldKey, $body['conditions'] ?? null),
+            'is_required'      => $fieldType === 'page_break' ? false : (bool) ($body['is_required'] ?? false),
+            'validation_rules' => $fieldType === 'page_break' ? null : ($body['validation_rules'] ?? null),
+            'conditions'       => $fieldType === 'page_break' ? null : $this->sanitizeConditions($form['id'], $fieldKey, $body['conditions'] ?? null),
         ]);
 
         return $this->response->setJSON($this->fieldModel->find($fieldId));

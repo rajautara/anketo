@@ -58,6 +58,10 @@
 #field-canvas .drag-handle { cursor: grab; color: var(--ak-text-muted); }
 #field-canvas .drag-handle:active { cursor: grabbing; }
 #field-canvas .field-row-label { font-weight: 600; color: var(--ak-text); }
+#field-canvas .field-row[data-type="page_break"] {
+    background: var(--ak-surface-2) !important;
+    border-style: dashed !important;
+}
 
 .sortable-ghost { opacity: .35; }
 .sortable-chosen { box-shadow: var(--ak-shadow-md); }

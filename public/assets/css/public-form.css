@@ -39,6 +39,45 @@
 /* Conditionally-hidden fields */
 .ak-field[hidden] { display: none !important; }
 
+/* Page breaks */
+.ak-page-step {
+    padding-bottom: .85rem;
+    margin-bottom: 1.2rem;
+    border-bottom: 1px solid var(--ak-border);
+}
+.ak-page-step span {
+    display: block;
+    color: var(--ak-text-muted);
+    font-size: .78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    margin-bottom: .25rem;
+}
+.ak-page-step h2 {
+    font-size: 1.15rem;
+    margin: 0;
+}
+.ak-page-actions {
+    display: flex;
+    justify-content: space-between;
+    gap: .75rem;
+    margin-top: 1.5rem;
+}
+.ak-page-actions [data-ak-page-submit],
+.ak-page-actions [data-ak-page-next] {
+    margin-left: auto;
+}
+
+@media (max-width: 575.98px) {
+    .ak-page-actions {
+        flex-direction: column-reverse;
+    }
+    .ak-page-actions .btn {
+        width: 100%;
+    }
+}
+
 /* Rich-text paragraph body (Quill output) */
 .ak-paragraph-body :where(p, ul, ol, blockquote, h1, h2, h3, h4, h5, h6):last-child { margin-bottom: 0; }
 .ak-paragraph-body .ql-align-center { text-align: center; }

@@ -14,6 +14,7 @@ if (! function_exists('field_type_label')) {
             'date'     => 'Date',
             'file'     => 'File Upload',
             'paragraph'   => 'Paragraph',
+            'page_break'  => 'Page Break',
             'appointment' => 'Appointment',
             'product_list' => 'Product List',
         ];
@@ -36,6 +37,7 @@ if (! function_exists('field_type_icon')) {
             'date'     => 'bi-calendar-date',
             'file'     => 'bi-paperclip',
             'paragraph'   => 'bi-text-left',
+            'page_break'  => 'bi-layout-split',
             'appointment' => 'bi-calendar-check',
             'product_list' => 'bi-bag',
         ];

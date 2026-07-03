@@ -131,6 +131,7 @@
         date:     { icon: 'bi-calendar-date',      label: 'Date' },
         file:     { icon: 'bi-paperclip',          label: 'File Upload' },
         paragraph:   { icon: 'bi-text-left',       label: 'Paragraph' },
+        page_break:  { icon: 'bi-layout-split',     label: 'Page Break' },
         appointment: { icon: 'bi-calendar-check',  label: 'Appointment' },
         product_list: { icon: 'bi-bag',            label: 'Product List' }
     };
@@ -147,6 +148,7 @@
         return Object.keys(FIELDS).map(function (id) { return FIELDS[id]; }).filter(function (f) {
             return String(f.id) !== String(current.id)
                 && f.field_type !== 'paragraph'
+                && f.field_type !== 'page_break'
                 && !(f.conditions && f.conditions.calc && f.conditions.calc.formula);
         }).map(function (f) {
             return { key: f.field_key, label: f.label, type: f.field_type, options: Array.isArray(f.options) ? f.options : [] };
@@ -309,6 +311,7 @@
         var type = field.field_type;
         var isOptionType = OPTION_TYPES.indexOf(type) !== -1;
         var isParagraph = type === 'paragraph';
+        var isPageBreak = type === 'page_break';
         var isAppointment = type === 'appointment';
         var isProductList = type === 'product_list';
         var options = Array.isArray(field.options) ? field.options : [];
@@ -324,6 +327,8 @@
                 '<div id="ak-para-editor-wrap">' +
                 '<textarea class="form-control form-control-sm" name="body" rows="4">' + escapeHtml((field.options && field.options.body) || '') + '</textarea>' +
                 '</div></div>';
+        } else if (isPageBreak) {
+            html += '<p class="text-muted small mb-0">Starts a new page in the public form. It does not collect or store an answer.</p>';
         } else {
             html += '<div class="mb-2"><label class="form-label small">Field key</label>' +
                 '<input type="text" class="form-control form-control-sm" name="field_key" value="' + escapeHtml(field.field_key) + '"></div>';
@@ -355,7 +360,9 @@
                 '<label class="form-check-label small" for="field-required">Required</label></div>';
         }
 
-        html += '<div id="conditions-container"></div>';
+        if (!isPageBreak) {
+            html += '<div id="conditions-container"></div>';
+        }
 
         propertiesForm.innerHTML = html;
 
@@ -382,7 +389,7 @@
             });
         }
 
-        if (window.AkBuilderConditions) {
+        if (!isPageBreak && window.AkBuilderConditions) {
             window.AkBuilderConditions.render(propertiesForm.querySelector('#conditions-container'), field, otherFieldsFor(field));
         }
 
