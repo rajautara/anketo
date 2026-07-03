@@ -53,7 +53,7 @@
 <div class="row g-3">
     <!-- Palette -->
     <div class="col-12 col-lg-3 ak-builder-col">
-        <div class="card">
+        <div class="card ak-builder-palette-card">
             <div class="card-header">Add a field</div>
             <div class="card-body">
                 <div id="field-palette">
@@ -958,6 +958,10 @@
     Sortable.create(document.getElementById('field-palette'), {
         group: { name: 'builder', pull: 'clone', put: false },
         sort: false,
+        scroll: true,
+        bubbleScroll: true,
+        scrollSensitivity: 80,
+        scrollSpeed: 12,
         animation: 150
     });
 
@@ -966,6 +970,10 @@
         group: { name: 'builder', pull: false, put: true },
         animation: 150,
         handle: '.drag-handle',
+        scroll: true,
+        bubbleScroll: true,
+        scrollSensitivity: 80,
+        scrollSpeed: 12,
         onAdd: function (evt) {
             var fieldType = evt.item.dataset.fieldType;
             var index = evt.newIndex;

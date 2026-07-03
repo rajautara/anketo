@@ -1,6 +1,6 @@
 /* Anketo — Form Builder (2-pane: palette / canvas, properties in a modal) */
 
-.ak-builder-col .card { height: 100%; }
+.ak-builder-col .card { height: auto; }
 .ak-builder-col .card-header {
     background: transparent;
     border-bottom: 1px solid var(--ak-border);
@@ -14,6 +14,7 @@
 
 /* ---- Palette --------------------------------------------------------------*/
 #field-palette { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; }
+.ak-builder-palette-card { overflow: visible; }
 .field-palette-item {
     cursor: grab;
     display: flex;
@@ -42,6 +43,16 @@
 }
 .field-palette-item:hover { border-color: var(--ak-primary) !important; box-shadow: var(--ak-shadow-sm); }
 .field-palette-item:active { cursor: grabbing; }
+
+@media (min-width: 992px) {
+    .ak-builder-palette-card {
+        position: sticky;
+        top: 5rem;
+        align-self: flex-start;
+        max-height: calc(100vh - 6rem);
+        overflow: auto;
+    }
+}
 
 /* ---- Canvas ---------------------------------------------------------------*/
 #field-canvas { min-height: 240px; }
