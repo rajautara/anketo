@@ -60,7 +60,7 @@ class PublicFormController extends BaseController
                 $bookedSlots[$field['field_key']] = $this->submissionDataModel->getBookedSlots($form['id'], $field['field_key']);
             }
 
-            if ($field['field_type'] === 'page_break') {
+            if (in_array($field['field_type'], ['page_break', 'review_before_submit'], true)) {
                 continue;
             }
 
@@ -70,6 +70,9 @@ class PublicFormController extends BaseController
                 'type'          => $field['field_type'],
                 'is_required'   => (bool) $field['is_required'],
                 'conditions'    => $field['conditions'] ?? null,
+                'options'       => in_array($field['field_type'], FormFieldModel::CONFIG_FIELD_TYPES, true)
+                    ? ($field['options'] ?? [])
+                    : [],
                 'option_values' => in_array($field['field_type'], FormFieldModel::OPTION_FIELD_TYPES, true)
                     ? array_column($field['options'] ?? [], 'value')
                     : [],

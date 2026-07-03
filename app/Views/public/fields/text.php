@@ -1,13 +1,22 @@
-<div class="mb-3">
-    <label for="field-<?= $field['id'] ?>" class="form-label">
-        <?= esc($field['label']) ?><?php if ($field['is_required']) : ?> <span class="text-danger">*</span><?php endif ?>
-    </label>
-    <input type="text" class="form-control<?= $fieldError ? ' is-invalid' : '' ?>"
+<?php $isHiddenText = (bool) ($field['options']['is_hidden'] ?? false); ?>
+<?php if ($isHiddenText) : ?>
+    <input type="hidden"
            id="field-<?= $field['id'] ?>"
            name="answers[<?= esc($field['field_key'], 'attr') ?>]"
-           placeholder="<?= esc($field['placeholder'] ?? '') ?>"
            value="<?= esc(old('answers.' . $field['field_key'], '')) ?>"
-           <?= $field['is_required'] ? 'required' : '' ?>>
-    <?php if (! empty($field['help_text'])) : ?><div class="form-text"><?= esc($field['help_text']) ?></div><?php endif ?>
-    <?php if ($fieldError) : ?><div class="invalid-feedback d-block"><?= esc($fieldError) ?></div><?php endif ?>
-</div>
+           data-ak-hidden-text="1">
+<?php else : ?>
+    <div class="mb-3">
+        <label for="field-<?= $field['id'] ?>" class="form-label">
+            <?= esc($field['label']) ?><?php if ($field['is_required']) : ?> <span class="text-danger">*</span><?php endif ?>
+        </label>
+        <input type="text" class="form-control<?= $fieldError ? ' is-invalid' : '' ?>"
+               id="field-<?= $field['id'] ?>"
+               name="answers[<?= esc($field['field_key'], 'attr') ?>]"
+               placeholder="<?= esc($field['placeholder'] ?? '') ?>"
+               value="<?= esc(old('answers.' . $field['field_key'], '')) ?>"
+               <?= $field['is_required'] ? 'required' : '' ?>>
+        <?php if (! empty($field['help_text'])) : ?><div class="form-text"><?= esc($field['help_text']) ?></div><?php endif ?>
+        <?php if ($fieldError) : ?><div class="invalid-feedback d-block"><?= esc($fieldError) ?></div><?php endif ?>
+    </div>
+<?php endif ?>

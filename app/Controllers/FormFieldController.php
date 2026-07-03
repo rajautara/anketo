@@ -61,7 +61,8 @@ class FormFieldController extends BaseController
 
         $label     = trim((string) ($body['label'] ?? $field['label']));
         $fieldType = $field['field_type'];
-        $fieldKey  = $fieldType === 'page_break'
+        $isStaticDisplay = in_array($fieldType, ['page_break', 'review_before_submit'], true);
+        $fieldKey  = $isStaticDisplay
             ? (string) $field['field_key']
             : trim((string) ($body['field_key'] ?? $field['field_key']));
 
@@ -87,11 +88,15 @@ class FormFieldController extends BaseController
         // (it would strip the config object to []).
         if ($fieldType === 'page_break') {
             $options = null;
+        } elseif ($fieldType === 'review_before_submit') {
+            $options = $this->sanitizeReviewConfig($body['options'] ?? []);
         } elseif (in_array($fieldType, FormFieldModel::OPTION_FIELD_TYPES, true)) {
             $options = array_values(array_filter(
                 is_array($body['options'] ?? null) ? $body['options'] : [],
                 static fn ($opt) => isset($opt['value'], $opt['label']) && trim((string) $opt['label']) !== ''
             ));
+        } elseif ($fieldType === 'text') {
+            $options = $this->sanitizeTextConfig($body['options'] ?? []);
         } elseif ($fieldType === 'appointment') {
             $options = $this->sanitizeAppointmentConfig($body['options'] ?? []);
         } elseif ($fieldType === 'product_list') {
@@ -106,12 +111,12 @@ class FormFieldController extends BaseController
         $this->fieldModel->update($fieldId, [
             'label'            => $label,
             'field_key'        => $fieldKey,
-            'placeholder'      => $fieldType === 'page_break' ? null : (($body['placeholder'] ?? '') !== '' ? $body['placeholder'] : null),
-            'help_text'        => $fieldType === 'page_break' ? null : (($body['help_text'] ?? '') !== '' ? $body['help_text'] : null),
+            'placeholder'      => $isStaticDisplay ? null : (($body['placeholder'] ?? '') !== '' ? $body['placeholder'] : null),
+            'help_text'        => $isStaticDisplay ? null : (($body['help_text'] ?? '') !== '' ? $body['help_text'] : null),
             'options'          => $options,
-            'is_required'      => $fieldType === 'page_break' ? false : (bool) ($body['is_required'] ?? false),
-            'validation_rules' => $fieldType === 'page_break' ? null : ($body['validation_rules'] ?? null),
-            'conditions'       => $fieldType === 'page_break' ? null : $this->sanitizeConditions($form['id'], $fieldKey, $fieldType, $body['conditions'] ?? null),
+            'is_required'      => ($isStaticDisplay || ($fieldType === 'text' && (bool) ($options['is_hidden'] ?? false))) ? false : (bool) ($body['is_required'] ?? false),
+            'validation_rules' => $isStaticDisplay ? null : ($body['validation_rules'] ?? null),
+            'conditions'       => $isStaticDisplay ? null : $this->sanitizeConditions($form['id'], $fieldKey, $fieldType, $body['conditions'] ?? null),
         ]);
 
         return $this->response->setJSON($this->fieldModel->find($fieldId));
@@ -235,6 +240,10 @@ class FormFieldController extends BaseController
             return \App\Libraries\AppointmentAvailability::DEFAULT_CONFIG;
         }
 
+        if ($fieldType === 'text') {
+            return ['is_hidden' => false];
+        }
+
         if ($fieldType === 'paragraph') {
             return ['body' => ''];
         }
@@ -243,7 +252,25 @@ class FormFieldController extends BaseController
             return ProductList::DEFAULT_CONFIG;
         }
 
+        if ($fieldType === 'review_before_submit') {
+            return ['show_hidden_text' => false];
+        }
+
         return null;
+    }
+
+    private function sanitizeTextConfig($raw): array
+    {
+        $raw = is_array($raw) ? $raw : [];
+
+        return ['is_hidden' => (bool) ($raw['is_hidden'] ?? false)];
+    }
+
+    private function sanitizeReviewConfig($raw): array
+    {
+        $raw = is_array($raw) ? $raw : [];
+
+        return ['show_hidden_text' => (bool) ($raw['show_hidden_text'] ?? false)];
     }
 
     /**

@@ -90,6 +90,50 @@
     margin: .35rem 0;
 }
 
+/* Review before submit */
+.ak-review-before-submit {
+    padding: 1rem;
+    border: 1px solid var(--ak-border);
+    border-radius: var(--ak-radius-sm);
+    background: var(--ak-surface-2);
+}
+.ak-review-before-submit h3 {
+    font-size: 1.05rem;
+}
+.ak-review-list {
+    display: grid;
+    gap: .65rem;
+}
+.ak-review-row {
+    display: grid;
+    grid-template-columns: minmax(7rem, 34%) minmax(0, 1fr);
+    gap: .85rem;
+    padding-bottom: .65rem;
+    border-bottom: 1px solid var(--ak-border);
+}
+.ak-review-row:last-child {
+    padding-bottom: 0;
+    border-bottom: 0;
+}
+.ak-review-row dt {
+    color: var(--ak-text-muted);
+    font-weight: 700;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+.ak-review-row dd {
+    margin: 0;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+@media (max-width: 575.98px) {
+    .ak-review-row {
+        grid-template-columns: 1fr;
+        gap: .15rem;
+    }
+}
+
 /* Appointment field → date + tappable time slots */
 .ak-appt-slots:empty { display: none; }
 .ak-appt-slot { min-width: 4.5rem; }

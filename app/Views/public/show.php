@@ -114,4 +114,5 @@
 <script src="<?= base_url('assets/js/page-breaks.js') ?>?v=<?= filemtime(FCPATH . 'assets/js/page-breaks.js') ?>"></script>
 <script src="<?= base_url('assets/js/appointment.js') ?>?v=<?= filemtime(FCPATH . 'assets/js/appointment.js') ?>"></script>
 <script src="<?= base_url('assets/js/product-list.js') ?>?v=<?= filemtime(FCPATH . 'assets/js/product-list.js') ?>"></script>
+<script src="<?= base_url('assets/js/review-before-submit.js') ?>?v=<?= filemtime(FCPATH . 'assets/js/review-before-submit.js') ?>"></script>
 <?= $this->endSection() ?>

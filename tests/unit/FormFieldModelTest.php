@@ -22,4 +22,24 @@ final class FormFieldModelTest extends CIUnitTestCase
 
         $this->assertSame('Page Break', $model->defaultLabelFor('page_break'));
     }
+
+    public function testReviewBeforeSubmitIsSupportedAndDisplayOnly(): void
+    {
+        $this->assertContains('review_before_submit', FormFieldModel::FIELD_TYPES);
+        $this->assertContains('review_before_submit', FormFieldModel::DISPLAY_ONLY_TYPES);
+        $this->assertNotContains('review_before_submit', FormFieldModel::OPTION_FIELD_TYPES);
+        $this->assertContains('review_before_submit', FormFieldModel::CONFIG_FIELD_TYPES);
+    }
+
+    public function testReviewBeforeSubmitDefaultLabel(): void
+    {
+        $model = new FormFieldModel();
+
+        $this->assertSame('Review Before Submit', $model->defaultLabelFor('review_before_submit'));
+    }
+
+    public function testTextFieldSupportsConfigOptions(): void
+    {
+        $this->assertContains('text', FormFieldModel::CONFIG_FIELD_TYPES);
+    }
 }

@@ -133,9 +133,11 @@
         paragraph:   { icon: 'bi-text-left',       label: 'Paragraph' },
         page_break:  { icon: 'bi-layout-split',     label: 'Page Break' },
         appointment: { icon: 'bi-calendar-check',  label: 'Appointment' },
-        product_list: { icon: 'bi-bag',            label: 'Product List' }
+        product_list: { icon: 'bi-bag',            label: 'Product List' },
+        review_before_submit: { icon: 'bi-card-checklist', label: 'Review Before Submit' }
     };
     var OPTION_TYPES = ['checkbox', 'radio', 'select'];
+    var STATIC_DISPLAY_TYPES = ['page_break', 'review_before_submit'];
     var WEEKDAYS = [{ v: 1, t: 'Mon' }, { v: 2, t: 'Tue' }, { v: 3, t: 'Wed' }, { v: 4, t: 'Thu' }, { v: 5, t: 'Fri' }, { v: 6, t: 'Sat' }, { v: 7, t: 'Sun' }];
     var PARA_TOOLBAR = [['bold', 'italic', 'underline', 'strike'], [{ header: [2, 3, false] }], [{ list: 'ordered' }, { list: 'bullet' }], [{ align: [] }], ['link', 'image'], ['clean']];
 
@@ -150,6 +152,7 @@
             return String(f.id) !== String(current.id)
                 && f.field_type !== 'paragraph'
                 && f.field_type !== 'page_break'
+                && f.field_type !== 'review_before_submit'
                 && !(c.calc && c.calc.formula)
                 && !(Array.isArray(c.updates) && c.updates.length);
         }).map(function (f) {
@@ -314,9 +317,14 @@
         var isOptionType = OPTION_TYPES.indexOf(type) !== -1;
         var isParagraph = type === 'paragraph';
         var isPageBreak = type === 'page_break';
+        var isReview = type === 'review_before_submit';
+        var isStaticDisplay = STATIC_DISPLAY_TYPES.indexOf(type) !== -1;
+        var isText = type === 'text';
         var isAppointment = type === 'appointment';
         var isProductList = type === 'product_list';
         var options = Array.isArray(field.options) ? field.options : [];
+        var textCfg = (isText && field.options && !Array.isArray(field.options)) ? field.options : {};
+        var reviewCfg = (isReview && field.options && !Array.isArray(field.options)) ? field.options : {};
         var apptCfg = (isAppointment && field.options && !Array.isArray(field.options)) ? field.options : {};
         var productCfg = (isProductList && field.options && !Array.isArray(field.options)) ? field.options : { products: [] };
 
@@ -331,6 +339,11 @@
                 '</div></div>';
         } else if (isPageBreak) {
             html += '<p class="text-muted small mb-0">Starts a new page in the public form. It does not collect or store an answer.</p>';
+        } else if (isReview) {
+            html += '<p class="text-muted small mb-2">Shows respondents a live summary of their visible answers before they submit. It does not collect or store an answer.</p>' +
+                '<div class="form-check mb-0">' +
+                '<input type="checkbox" class="form-check-input" id="review-show-hidden-text" name="review_show_hidden_text"' + (reviewCfg.show_hidden_text ? ' checked' : '') + '>' +
+                '<label class="form-check-label small" for="review-show-hidden-text">Display hidden Text fields in this review</label></div>';
         } else {
             html += '<div class="mb-2"><label class="form-label small">Field key</label>' +
                 '<input type="text" class="form-control form-control-sm" name="field_key" value="' + escapeHtml(field.field_key) + '"></div>';
@@ -357,12 +370,18 @@
                 html += productConfigHtml(productCfg);
             }
 
+            if (isText) {
+                html += '<div class="form-check mb-2">' +
+                    '<input type="checkbox" class="form-check-input" id="text-hidden-field" name="text_hidden_field"' + (textCfg.is_hidden ? ' checked' : '') + '>' +
+                    '<label class="form-check-label small" for="text-hidden-field">Hidden field (still saved in submissions)</label></div>';
+            }
+
             html += '<div class="form-check mb-3">' +
                 '<input type="checkbox" class="form-check-input" id="field-required" name="is_required"' + (field.is_required ? ' checked' : '') + '>' +
                 '<label class="form-check-label small" for="field-required">Required</label></div>';
         }
 
-        if (!isPageBreak) {
+        if (!isStaticDisplay) {
             html += '<div id="conditions-container"></div>';
         }
 
@@ -391,7 +410,7 @@
             });
         }
 
-        if (!isPageBreak && window.AkBuilderConditions) {
+        if (!isStaticDisplay && window.AkBuilderConditions) {
             window.AkBuilderConditions.render(propertiesForm.querySelector('#conditions-container'), field, otherFieldsFor(field));
         }
 
@@ -934,6 +953,18 @@
                 alert('Add at least one product.');
                 return;
             }
+        }
+
+        if (field.field_type === 'text') {
+            payload.options = {
+                is_hidden: !!(propertiesForm.querySelector('[name="text_hidden_field"]') || {}).checked
+            };
+        }
+
+        if (field.field_type === 'review_before_submit') {
+            payload.options = {
+                show_hidden_text: !!(propertiesForm.querySelector('[name="review_show_hidden_text"]') || {}).checked
+            };
         }
 
         var condContainer = propertiesForm.querySelector('#conditions-container');

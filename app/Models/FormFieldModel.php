@@ -38,21 +38,21 @@ class FormFieldModel extends Model
     ];
 
     protected $validationRules = [
-        'field_type' => 'required|in_list[text,email,number,textarea,checkbox,radio,select,date,file,paragraph,page_break,appointment,product_list]',
+        'field_type' => 'required|in_list[text,email,number,textarea,checkbox,radio,select,date,file,paragraph,page_break,appointment,product_list,review_before_submit]',
         'label'      => 'required|max_length[255]',
         'field_key'  => 'required|max_length[100]',
     ];
 
-    public const FIELD_TYPES = ['text', 'email', 'number', 'textarea', 'checkbox', 'radio', 'select', 'date', 'file', 'paragraph', 'page_break', 'appointment', 'product_list'];
+    public const FIELD_TYPES = ['text', 'email', 'number', 'textarea', 'checkbox', 'radio', 'select', 'date', 'file', 'paragraph', 'page_break', 'appointment', 'product_list', 'review_before_submit'];
 
     /** Field types that use an `options` list of {value,label} choices. */
     public const OPTION_FIELD_TYPES = ['checkbox', 'radio', 'select'];
 
     /** Display-only types: render no input, store no answer, excluded from CSV columns. */
-    public const DISPLAY_ONLY_TYPES = ['paragraph', 'page_break'];
+    public const DISPLAY_ONLY_TYPES = ['paragraph', 'page_break', 'review_before_submit'];
 
     /** Types whose `options` JSON holds a config object (not a {value,label} choice list). */
-    public const CONFIG_FIELD_TYPES = ['appointment', 'product_list'];
+    public const CONFIG_FIELD_TYPES = ['text', 'appointment', 'product_list', 'review_before_submit'];
 
     public function getForForm(int $formId): array
     {
@@ -129,6 +129,7 @@ class FormFieldModel extends Model
             'page_break'  => 'Page Break',
             'appointment' => 'Appointment',
             'product_list' => 'Product List',
+            'review_before_submit' => 'Review Before Submit',
         ];
 
         return $labels[$fieldType] ?? 'Untitled Field';

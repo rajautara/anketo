@@ -17,6 +17,7 @@ if (! function_exists('field_type_label')) {
             'page_break'  => 'Page Break',
             'appointment' => 'Appointment',
             'product_list' => 'Product List',
+            'review_before_submit' => 'Review Before Submit',
         ];
 
         return $labels[$type] ?? ucfirst($type);
@@ -40,6 +41,7 @@ if (! function_exists('field_type_icon')) {
             'page_break'  => 'bi-layout-split',
             'appointment' => 'bi-calendar-check',
             'product_list' => 'bi-bag',
+            'review_before_submit' => 'bi-card-checklist',
         ];
 
         return $icons[$type] ?? 'bi-input-cursor-text';
