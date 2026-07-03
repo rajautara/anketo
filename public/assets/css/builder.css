@@ -137,6 +137,73 @@
 #properties-form .form-label { font-size: .78rem; text-transform: uppercase; letter-spacing: .04em; color: var(--ak-text-muted); margin-bottom: .25rem; }
 #properties-form .option-row { margin-bottom: .4rem; }
 
+.ak-products-list {
+    display: flex;
+    flex-direction: column;
+    gap: .75rem;
+}
+.ak-product-row {
+    display: grid;
+    grid-template-columns: 112px minmax(0, 1fr) 42px;
+    gap: .75rem;
+    align-items: start;
+    padding: .75rem;
+    border: 1px solid var(--ak-border);
+    border-radius: var(--ak-radius-sm);
+    background: var(--ak-surface);
+}
+.ak-product-image-box {
+    display: flex;
+    flex-direction: column;
+    gap: .45rem;
+}
+.ak-product-preview {
+    width: 100%;
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    border: 1px solid var(--ak-border);
+    border-radius: var(--ak-radius-sm);
+    background: var(--ak-surface-2);
+}
+.ak-product-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.ak-product-preview.is-empty {
+    color: var(--ak-text-muted);
+    font-size: 1.5rem;
+}
+.ak-product-fields {
+    min-width: 0;
+}
+.ak-product-actions {
+    display: flex;
+    flex-direction: column;
+    gap: .35rem;
+}
+.ak-product-actions .btn {
+    width: 2.25rem;
+    height: 2.25rem;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+@media (max-width: 575.98px) {
+    .ak-product-row {
+        grid-template-columns: 86px minmax(0, 1fr);
+    }
+    .ak-product-actions {
+        grid-column: 1 / -1;
+        flex-direction: row;
+    }
+}
+
 /* ---- Public link banner ---------------------------------------------------*/
 .ak-share-banner {
     display: flex;

@@ -3,6 +3,7 @@
 namespace App\Controllers;
 
 use App\Libraries\ConditionEvaluator;
+use App\Libraries\ProductList;
 use App\Models\FormFieldModel;
 use App\Models\FormModel;
 use CodeIgniter\Exceptions\PageNotFoundException;
@@ -88,6 +89,8 @@ class FormFieldController extends BaseController
             ));
         } elseif ($fieldType === 'appointment') {
             $options = $this->sanitizeAppointmentConfig($body['options'] ?? []);
+        } elseif ($fieldType === 'product_list') {
+            $options = ProductList::sanitizeConfig($body['options'] ?? []);
         } elseif ($fieldType === 'paragraph') {
             $rawBody = (string) ($body['body'] ?? $body['options']['body'] ?? '');
             $options = ['body' => (new \App\Libraries\HtmlSanitizer())->clean($rawBody)];
@@ -139,6 +142,19 @@ class FormFieldController extends BaseController
     public function uploadImage(int $formId): ResponseInterface
     {
         $form = $this->findFormOrFail($formId);
+
+        return $this->storeImageUpload($form['id'], 'paragraph', 'form-image');
+    }
+
+    public function uploadProductImage(int $formId): ResponseInterface
+    {
+        $form = $this->findFormOrFail($formId);
+
+        return $this->storeImageUpload($form['id'], 'products', 'product-image');
+    }
+
+    private function storeImageUpload(int $formId, string $folder, string $route): ResponseInterface
+    {
         $file = $this->request->getFile('image');
 
         if ($file === null || ! $file->isValid()) {
@@ -163,7 +179,7 @@ class FormFieldController extends BaseController
             return $this->response->setStatusCode(422)->setJSON(['error' => 'Only JPG, PNG, GIF, or WebP images are allowed.']);
         }
 
-        $directory = WRITEPATH . 'uploads/paragraph/' . $form['id'];
+        $directory = WRITEPATH . 'uploads/' . $folder . '/' . $formId;
         if (! is_dir($directory)) {
             mkdir($directory, 0755, true);
         }
@@ -171,7 +187,10 @@ class FormFieldController extends BaseController
         $name = bin2hex(random_bytes(8)) . '.' . $extByType[$info[2]];
         $file->move($directory, $name);
 
-        return $this->response->setJSON(['url' => site_url('form-image/' . $form['id'] . '/' . $name)]);
+        return $this->response->setJSON([
+            'name' => $name,
+            'url'  => site_url($route . '/' . $formId . '/' . $name),
+        ]);
     }
 
     private function findFormOrFail(int $id): array
@@ -213,6 +232,10 @@ class FormFieldController extends BaseController
 
         if ($fieldType === 'paragraph') {
             return ['body' => ''];
+        }
+
+        if ($fieldType === 'product_list') {
+            return ProductList::DEFAULT_CONFIG;
         }
 
         return null;

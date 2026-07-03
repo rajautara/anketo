@@ -5,6 +5,7 @@ namespace App\Controllers;
 use App\Libraries\AppointmentAvailability;
 use App\Libraries\ConditionEvaluator;
 use App\Libraries\FormulaEvaluator;
+use App\Libraries\ProductList;
 use App\Libraries\SubmissionNotifier;
 use App\Models\FormFieldModel;
 use App\Models\FormModel;
@@ -81,13 +82,23 @@ class PublicFormController extends BaseController
      */
     public function image(int $formId, string $name)
     {
+        return $this->serveUploadedImage($formId, $name, 'paragraph');
+    }
+
+    public function productImage(int $formId, string $name)
+    {
+        return $this->serveUploadedImage($formId, $name, 'products');
+    }
+
+    private function serveUploadedImage(int $formId, string $name, string $folder)
+    {
         $name = basename($name);
 
         if (preg_match('/^[a-f0-9]{16}\.(jpg|png|gif|webp)$/', $name) !== 1) {
             throw new PageNotFoundException('Image not found.');
         }
 
-        $path = WRITEPATH . 'uploads/paragraph/' . $formId . '/' . $name;
+        $path = WRITEPATH . 'uploads/' . $folder . '/' . $formId . '/' . $name;
         if (! is_file($path)) {
             throw new PageNotFoundException('Image not found.');
         }
@@ -117,6 +128,7 @@ class PublicFormController extends BaseController
 
         $errors = [];
         $toSave = [];
+        $productRequests = [];
 
         foreach ($fields as $field) {
             $key  = $field['field_key'];
@@ -146,6 +158,20 @@ class PublicFormController extends BaseController
             if (! empty($field['conditions']['calc']['formula'])) {
                 $computed = $this->formula->evaluate($field['conditions']['calc']['formula'], $postAnswers);
                 $toSave[] = $this->answerRow($field, $computed !== '' ? $computed : null, null);
+
+                continue;
+            }
+
+            if ($type === 'product_list') {
+                [$value, $productError] = ProductList::selectionValue($field, $postAnswers[$key] ?? []);
+                if ($productError !== null) {
+                    $errors[$key] = $productError;
+                }
+                $toSave[] = ['__product_field_id' => (int) $field['id']];
+                $productRequests[(int) $field['id']] = [
+                    'field'     => $field,
+                    'submitted' => $postAnswers[$key] ?? [],
+                ];
 
                 continue;
             }
@@ -194,7 +220,31 @@ class PublicFormController extends BaseController
         }
 
         $db = db_connect();
-        $db->transStart();
+        $db->transBegin();
+
+        $lockedProductAnswers = [];
+        if ($productRequests !== []) {
+            $lockedProductAnswers = $this->lockAndApplyProductSelections($form['id'], $productRequests);
+            foreach ($lockedProductAnswers as $fieldId => $result) {
+                if (($result['error'] ?? null) !== null) {
+                    $db->transRollback();
+
+                    $field = $productRequests[$fieldId]['field'];
+                    return redirect()->to(site_url('f/' . $token))
+                        ->withInput()
+                        ->with('errors', [$field['field_key'] => $result['error']]);
+                }
+            }
+        }
+
+        $answersToSave = [];
+        foreach ($toSave as $row) {
+            if (isset($row['__product_field_id'])) {
+                $answersToSave[] = $lockedProductAnswers[$row['__product_field_id']]['answer'];
+                continue;
+            }
+            $answersToSave[] = $row;
+        }
 
         $submissionId = $this->submissionModel->insert([
             'form_id'    => $form['id'],
@@ -202,17 +252,65 @@ class PublicFormController extends BaseController
             'user_agent' => (string) ($this->request->getUserAgent()?->getAgentString() ?? ''),
         ]);
 
-        $this->submissionDataModel->saveAnswers($submissionId, $toSave);
+        $this->submissionDataModel->saveAnswers($submissionId, $answersToSave);
 
-        $db->transComplete();
+        $db->transCommit();
 
         if ($db->transStatus() !== false) {
-            (new SubmissionNotifier())->notify($form, (int) $submissionId, $toSave);
+            (new SubmissionNotifier())->notify($form, (int) $submissionId, $answersToSave);
         }
 
         session()->setFlashdata('submitted', true);
 
         return redirect()->to(site_url('f/' . $token));
+    }
+
+    /**
+     * @param array<int,array{field:array,submitted:mixed}> $productRequests
+     * @return array<int,array{answer?:array,error?:string}>
+     */
+    private function lockAndApplyProductSelections(int $formId, array $productRequests): array
+    {
+        $ids = array_keys($productRequests);
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+        $rows = db_connect()->query(
+            'SELECT * FROM `form_fields` WHERE `form_id` = ? AND `id` IN (' . $placeholders . ') FOR UPDATE',
+            array_merge([$formId], $ids)
+        )->getResultArray();
+
+        $byId = [];
+        foreach ($rows as $row) {
+            $row['options'] = is_string($row['options'] ?? null) && $row['options'] !== ''
+                ? (json_decode($row['options'], true) ?: [])
+                : ($row['options'] ?? []);
+            $row['is_required'] = (bool) $row['is_required'];
+            $byId[(int) $row['id']] = $row;
+        }
+
+        $out = [];
+        foreach ($productRequests as $fieldId => $request) {
+            $field = $byId[$fieldId] ?? null;
+            if ($field === null || $field['field_type'] !== 'product_list') {
+                $out[$fieldId] = ['error' => 'Product list changed. Please try again.'];
+                continue;
+            }
+
+            [$value, $error] = ProductList::selectionValue($field, $request['submitted']);
+            if ($error !== null) {
+                $out[$fieldId] = ['error' => $error];
+                continue;
+            }
+
+            if ($value !== null) {
+                $this->fieldModel->update($fieldId, [
+                    'options' => ProductList::decrementStock($field['options'], $value),
+                ]);
+            }
+
+            $out[$fieldId] = ['answer' => $this->answerRow($field, $value, null)];
+        }
+
+        return $out;
     }
 
     private function answerRow(array $field, ?string $value, ?string $filePath): array

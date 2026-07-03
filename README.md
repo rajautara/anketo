@@ -4,7 +4,7 @@ A JotForm-style drag-and-drop form builder built with CodeIgniter 4, MySQL, and 
 
 ## Features
 
-- Drag-and-drop form builder (Bootstrap 5 + SortableJS) — 9 field types: text, email, number, textarea, checkbox, radio, select, date, file upload.
+- Drag-and-drop form builder (Bootstrap 5 + SortableJS) — field types include text, email, number, textarea, checkbox, radio, select, date, file upload, paragraphs, appointments, and product lists with stock tracking.
 - Public, shareable form links — anyone can fill in a published form without registering or logging in.
 - Admin / user roles via [CodeIgniter Shield](https://github.com/codeigniter4/shield): users manage their own forms, admins can see and manage everything and promote/demote other users.
 - Submission list, per-submission detail view, uploaded file downloads, and CSV export.

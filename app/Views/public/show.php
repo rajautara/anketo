@@ -69,6 +69,7 @@
 <?= $this->endSection() ?>
 
 <?= $this->section('pageScripts') ?>
-<script src="<?= base_url('assets/js/conditions.js') ?>"></script>
-<script src="<?= base_url('assets/js/appointment.js') ?>"></script>
+<script src="<?= base_url('assets/js/conditions.js') ?>?v=<?= filemtime(FCPATH . 'assets/js/conditions.js') ?>"></script>
+<script src="<?= base_url('assets/js/appointment.js') ?>?v=<?= filemtime(FCPATH . 'assets/js/appointment.js') ?>"></script>
+<script src="<?= base_url('assets/js/product-list.js') ?>?v=<?= filemtime(FCPATH . 'assets/js/product-list.js') ?>"></script>
 <?= $this->endSection() ?>

@@ -3,7 +3,7 @@
 <?= $this->section('title') ?>Anketo — Build forms people love to fill out<?= $this->endSection() ?>
 
 <?= $this->section('pageStyles') ?>
-<link rel="stylesheet" href="<?= base_url('assets/css/public-form.css') ?>">
+<link rel="stylesheet" href="<?= base_url('assets/css/public-form.css') ?>?v=<?= filemtime(FCPATH . 'assets/css/public-form.css') ?>">
 <?= $this->endSection() ?>
 
 <?= $this->section('main') ?>

@@ -116,6 +116,7 @@
 
     var FORM_ID = <?= (int) $form['id'] ?>;
     var API_BASE = '<?= site_url('forms/' . $form['id']) ?>';
+    var PRODUCT_IMAGE_BASE = '<?= site_url('product-image/' . $form['id']) ?>';
     var CSRF_TOKEN = document.querySelector('meta[name="csrf-token"]').content;
     var INITIAL_FIELDS = <?= json_encode($fields) ?>;
 
@@ -130,7 +131,8 @@
         date:     { icon: 'bi-calendar-date',      label: 'Date' },
         file:     { icon: 'bi-paperclip',          label: 'File Upload' },
         paragraph:   { icon: 'bi-text-left',       label: 'Paragraph' },
-        appointment: { icon: 'bi-calendar-check',  label: 'Appointment' }
+        appointment: { icon: 'bi-calendar-check',  label: 'Appointment' },
+        product_list: { icon: 'bi-bag',            label: 'Product List' }
     };
     var OPTION_TYPES = ['checkbox', 'radio', 'select'];
     var WEEKDAYS = [{ v: 1, t: 'Mon' }, { v: 2, t: 'Tue' }, { v: 3, t: 'Wed' }, { v: 4, t: 'Thu' }, { v: 5, t: 'Fri' }, { v: 6, t: 'Sat' }, { v: 7, t: 'Sun' }];
@@ -308,8 +310,10 @@
         var isOptionType = OPTION_TYPES.indexOf(type) !== -1;
         var isParagraph = type === 'paragraph';
         var isAppointment = type === 'appointment';
+        var isProductList = type === 'product_list';
         var options = Array.isArray(field.options) ? field.options : [];
         var apptCfg = (isAppointment && field.options && !Array.isArray(field.options)) ? field.options : {};
+        var productCfg = (isProductList && field.options && !Array.isArray(field.options)) ? field.options : { products: [] };
 
         var html = '';
         html += '<div class="mb-2"><label class="form-label small">Label</label>' +
@@ -324,7 +328,7 @@
             html += '<div class="mb-2"><label class="form-label small">Field key</label>' +
                 '<input type="text" class="form-control form-control-sm" name="field_key" value="' + escapeHtml(field.field_key) + '"></div>';
 
-            if (!isOptionType && !isAppointment) {
+            if (!isOptionType && !isAppointment && !isProductList) {
                 html += '<div class="mb-2"><label class="form-label small">Placeholder</label>' +
                     '<input type="text" class="form-control form-control-sm" name="placeholder" value="' + escapeHtml(field.placeholder) + '"></div>';
             }
@@ -342,6 +346,10 @@
                 html += appointmentConfigHtml(apptCfg);
             }
 
+            if (isProductList) {
+                html += productConfigHtml(productCfg);
+            }
+
             html += '<div class="form-check mb-3">' +
                 '<input type="checkbox" class="form-check-input" id="field-required" name="is_required"' + (field.is_required ? ' checked' : '') + '>' +
                 '<label class="form-check-label small" for="field-required">Required</label></div>';
@@ -355,6 +363,15 @@
             propertiesForm.querySelector('#add-option').addEventListener('click', function () {
                 propertiesForm.querySelector('#options-list').insertAdjacentHTML('beforeend', optionRowHtml({ label: '' }));
             });
+        }
+
+        if (isProductList) {
+            var addProduct = propertiesForm.querySelector('#add-product');
+            if (addProduct) {
+                addProduct.addEventListener('click', function () {
+                    propertiesForm.querySelector('#products-list').insertAdjacentHTML('beforeend', productRowHtml(defaultProduct()));
+                });
+            }
         }
 
         var weekdaysBox = propertiesForm.querySelector('#appt-weekdays');
@@ -372,8 +389,8 @@
         // The paragraph Quill editor is initialised on shown.bs.modal instead of
         // here: it (and the image-overlay math) needs a laid-out, stationary DOM,
         // and the dialog carries a transform during the fade transition.
-        fieldModalDialog.classList.toggle('modal-xl', isParagraph);
-        fieldModalDialog.classList.toggle('modal-lg', !isParagraph);
+        fieldModalDialog.classList.toggle('modal-xl', isParagraph || isProductList);
+        fieldModalDialog.classList.toggle('modal-lg', !(isParagraph || isProductList));
         fieldModal.show();
     }
 
@@ -415,6 +432,86 @@
             '<div class="col-6"><label class="form-label small">Slot (min)</label><input type="number" class="form-control form-control-sm" name="appt_slot" min="5" max="480" value="' + (parseInt(cfg.slot_minutes, 10) || 30) + '"></div>' +
             '<div class="col-6"><label class="form-label small">Book within (days)</label><input type="number" class="form-control form-control-sm" name="appt_maxdays" min="1" max="365" value="' + (parseInt(cfg.date_max_days, 10) || 60) + '"></div>' +
             '</div>';
+    }
+
+    function defaultProduct() {
+        return {
+            id: 'product_' + Date.now().toString(36) + '_' + Math.floor(Math.random() * 10000).toString(36),
+            name: 'Product Name',
+            description: '',
+            price: 0,
+            stock: 10,
+            image: ''
+        };
+    }
+
+    function productConfigHtml(cfg) {
+        var products = Array.isArray(cfg.products) && cfg.products.length ? cfg.products : [defaultProduct()];
+        return '<div class="mb-3"><label class="form-label small d-block">Products</label>' +
+            '<div id="products-list" class="ak-products-list">' + products.map(productRowHtml).join('') + '</div>' +
+            '<button type="button" class="btn btn-sm btn-outline-secondary mt-2" id="add-product"><i class="bi bi-plus"></i> Add product</button></div>';
+    }
+
+    function productImageUrl(name) {
+        return name ? PRODUCT_IMAGE_BASE + '/' + encodeURIComponent(name) : '';
+    }
+
+    function productRowHtml(product) {
+        product = product || defaultProduct();
+        var image = product.image || '';
+        var imageUrl = productImageUrl(image);
+        return '<div class="ak-product-row" data-product-id="' + escapeHtml(product.id || defaultProduct().id) + '">' +
+            '<div class="ak-product-image-box">' +
+                '<div class="ak-product-preview' + (imageUrl ? '' : ' is-empty') + '">' +
+                    (imageUrl ? '<img src="' + escapeHtml(imageUrl) + '" alt="">' : '<i class="bi bi-image"></i>') +
+                '</div>' +
+                '<input type="hidden" class="product-image" value="' + escapeHtml(image) + '">' +
+                '<button type="button" class="btn btn-sm btn-outline-secondary upload-product-image"><i class="bi bi-upload"></i> Upload</button>' +
+            '</div>' +
+            '<div class="ak-product-fields">' +
+                '<div class="row g-2">' +
+                    '<div class="col-md-7"><label class="form-label small">Name</label><input type="text" class="form-control form-control-sm product-name" value="' + escapeHtml(product.name || '') + '"></div>' +
+                    '<div class="col-6 col-md-2"><label class="form-label small">Price</label><input type="number" class="form-control form-control-sm product-price" min="0" step="0.01" value="' + escapeHtml(product.price == null ? 0 : product.price) + '"></div>' +
+                    '<div class="col-6 col-md-3"><label class="form-label small">Stock</label><input type="number" class="form-control form-control-sm product-stock" min="0" step="1" value="' + escapeHtml(product.stock == null ? 0 : product.stock) + '"></div>' +
+                    '<div class="col-12"><label class="form-label small">Description</label><textarea class="form-control form-control-sm product-description" rows="2">' + escapeHtml(product.description || '') + '</textarea></div>' +
+                '</div>' +
+            '</div>' +
+            '<div class="ak-product-actions">' +
+                '<button type="button" class="btn btn-sm btn-outline-secondary move-product-up" title="Move up"><i class="bi bi-arrow-up"></i></button>' +
+                '<button type="button" class="btn btn-sm btn-outline-secondary move-product-down" title="Move down"><i class="bi bi-arrow-down"></i></button>' +
+                '<button type="button" class="btn btn-sm btn-outline-danger remove-product" title="Remove"><i class="bi bi-trash"></i></button>' +
+            '</div>' +
+            '</div>';
+    }
+
+    function uploadProductImage(row) {
+        var input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/png,image/jpeg,image/gif,image/webp';
+        input.addEventListener('change', function () {
+            var file = input.files && input.files[0];
+            if (!file) { return; }
+
+            var data = new FormData();
+            data.append('image', file);
+
+            fetch(API_BASE + '/product-image', {
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': CSRF_TOKEN, 'X-Requested-With': 'XMLHttpRequest' },
+                body: data
+            }).then(function (res) {
+                if (!res.ok) {
+                    return res.json().catch(function () { return {}; }).then(function (b) { throw new Error(b.error || ('Upload failed (' + res.status + ')')); });
+                }
+                return res.json();
+            }).then(function (body) {
+                row.querySelector('.product-image').value = body.name || '';
+                var preview = row.querySelector('.ak-product-preview');
+                preview.classList.remove('is-empty');
+                preview.innerHTML = '<img src="' + escapeHtml(body.url || productImageUrl(body.name || '')) + '" alt="">';
+            }).catch(function (err) { alert(err.message); });
+        });
+        input.click();
     }
 
     // Quill toolbar image button: upload the picked file, insert the returned URL
@@ -810,6 +907,26 @@
             };
         }
 
+        if (field.field_type === 'product_list') {
+            var productRows = Array.prototype.slice.call(propertiesForm.querySelectorAll('.ak-product-row'));
+            payload.options = {
+                products: productRows.map(function (row) {
+                    return {
+                        id: row.getAttribute('data-product-id') || defaultProduct().id,
+                        name: (row.querySelector('.product-name') || {}).value || '',
+                        description: (row.querySelector('.product-description') || {}).value || '',
+                        price: parseFloat((row.querySelector('.product-price') || {}).value || '0') || 0,
+                        stock: parseInt((row.querySelector('.product-stock') || {}).value || '0', 10) || 0,
+                        image: (row.querySelector('.product-image') || {}).value || ''
+                    };
+                })
+            };
+            if (payload.options.products.length === 0) {
+                alert('Add at least one product.');
+                return;
+            }
+        }
+
         var condContainer = propertiesForm.querySelector('#conditions-container');
         if (window.AkBuilderConditions && condContainer) {
             payload.conditions = window.AkBuilderConditions.collect(condContainer);
@@ -883,6 +1000,19 @@
     propertiesForm.addEventListener('click', function (evt) {
         if (evt.target.closest('.remove-option')) {
             evt.target.closest('.option-row').remove();
+        }
+        var productRow = evt.target.closest('.ak-product-row');
+        if (evt.target.closest('.remove-product') && productRow) {
+            productRow.remove();
+        }
+        if (evt.target.closest('.move-product-up') && productRow && productRow.previousElementSibling) {
+            productRow.parentNode.insertBefore(productRow, productRow.previousElementSibling);
+        }
+        if (evt.target.closest('.move-product-down') && productRow && productRow.nextElementSibling) {
+            productRow.parentNode.insertBefore(productRow.nextElementSibling, productRow);
+        }
+        if (evt.target.closest('.upload-product-image') && productRow) {
+            uploadProductImage(productRow);
         }
     });
 

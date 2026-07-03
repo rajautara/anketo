@@ -36,6 +36,9 @@
             var h = wrap.querySelector('.ak-appt-value');
             return h ? h.value : '';
         }
+        if (type === 'product_list') {
+            return Array.prototype.map.call(wrap.querySelectorAll('.ak-product-check:checked'), function (i) { return i.value; });
+        }
         var el = wrap.querySelector('input, select, textarea');
         return el ? el.value : '';
     }
@@ -224,10 +227,21 @@
                     el.disabled = true;
                     return;
                 }
+                if (c.type === 'product_list') {
+                    if (el.classList.contains('ak-product-check')) {
+                        var item = el.closest('.ak-product-item');
+                        el.disabled = !!(item && item.classList.contains('is-disabled'));
+                    } else if (el.classList.contains('ak-product-qty')) {
+                        var row = el.closest('.ak-product-item');
+                        var check = row ? row.querySelector('.ak-product-check') : null;
+                        el.disabled = !(check && check.checked && !check.disabled);
+                    }
+                    return;
+                }
                 // visible again
                 var isCalc = c.conditions && c.conditions.calc && c.conditions.calc.formula;
                 el.disabled = false;
-                el.required = flags.required && !isCalc && el.type !== 'hidden';
+                el.required = flags.required && !isCalc && el.type !== 'hidden' && c.type !== 'product_list';
                 if (flags.disabled || isCalc) {
                     el.readOnly = (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA');
                     if (el.tagName === 'SELECT') { el.disabled = true; }

@@ -38,12 +38,12 @@ class FormFieldModel extends Model
     ];
 
     protected $validationRules = [
-        'field_type' => 'required|in_list[text,email,number,textarea,checkbox,radio,select,date,file,paragraph,appointment]',
+        'field_type' => 'required|in_list[text,email,number,textarea,checkbox,radio,select,date,file,paragraph,appointment,product_list]',
         'label'      => 'required|max_length[255]',
         'field_key'  => 'required|max_length[100]',
     ];
 
-    public const FIELD_TYPES = ['text', 'email', 'number', 'textarea', 'checkbox', 'radio', 'select', 'date', 'file', 'paragraph', 'appointment'];
+    public const FIELD_TYPES = ['text', 'email', 'number', 'textarea', 'checkbox', 'radio', 'select', 'date', 'file', 'paragraph', 'appointment', 'product_list'];
 
     /** Field types that use an `options` list of {value,label} choices. */
     public const OPTION_FIELD_TYPES = ['checkbox', 'radio', 'select'];
@@ -52,7 +52,7 @@ class FormFieldModel extends Model
     public const DISPLAY_ONLY_TYPES = ['paragraph'];
 
     /** Types whose `options` JSON holds a config object (not a {value,label} choice list). */
-    public const CONFIG_FIELD_TYPES = ['appointment'];
+    public const CONFIG_FIELD_TYPES = ['appointment', 'product_list'];
 
     public function getForForm(int $formId): array
     {
@@ -127,6 +127,7 @@ class FormFieldModel extends Model
             'file'     => 'File Upload',
             'paragraph'   => 'Paragraph',
             'appointment' => 'Appointment',
+            'product_list' => 'Product List',
         ];
 
         return $labels[$fieldType] ?? 'Untitled Field';

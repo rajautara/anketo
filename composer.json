@@ -31,7 +31,7 @@
         "post-update-cmd": [
             "CodeIgniter\\Commands\\Utilities\\Requirements::postUpdate"
         ],
-        "test": "phpunit"
+        "test": "phpunit --no-coverage"
     },
     "config": {
         "optimize-autoloader": true,

@@ -92,7 +92,10 @@ class SubmissionNotifier
         }
 
         $value = $row['value'];
-        if ($value !== null && str_starts_with(trim($value), '[')) {
+        $productAnswer = ProductList::formatAnswer($value);
+        if ($productAnswer !== null) {
+            $value = $productAnswer;
+        } elseif ($value !== null && str_starts_with(trim($value), '[')) {
             $decoded = json_decode($value, true);
             if (is_array($decoded)) {
                 $value = implode(', ', $decoded);

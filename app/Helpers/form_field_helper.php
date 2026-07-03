@@ -15,6 +15,7 @@ if (! function_exists('field_type_label')) {
             'file'     => 'File Upload',
             'paragraph'   => 'Paragraph',
             'appointment' => 'Appointment',
+            'product_list' => 'Product List',
         ];
 
         return $labels[$type] ?? ucfirst($type);
@@ -36,6 +37,7 @@ if (! function_exists('field_type_icon')) {
             'file'     => 'bi-paperclip',
             'paragraph'   => 'bi-text-left',
             'appointment' => 'bi-calendar-check',
+            'product_list' => 'bi-bag',
         ];
 
         return $icons[$type] ?? 'bi-input-cursor-text';

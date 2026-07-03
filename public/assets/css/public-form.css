@@ -78,6 +78,129 @@
 }
 .ak-form-body .form-check-label { cursor: pointer; font-weight: 500; display: block; }
 
+/* Product list field */
+.ak-product-items {
+    display: flex;
+    flex-direction: column;
+}
+.ak-product-item {
+    display: grid;
+    grid-template-columns: 24px minmax(0, 1fr) auto;
+    gap: 1rem;
+    align-items: center;
+    padding: 1.2rem 0 1.45rem;
+    border-bottom: 1px solid var(--ak-border);
+}
+.ak-product-item.has-image {
+    grid-template-columns: 24px 72px minmax(0, 1fr) auto;
+}
+.ak-product-item.is-disabled {
+    opacity: .62;
+}
+.ak-product-check {
+    align-self: center;
+    margin: 0;
+}
+.ak-product-media {
+    width: 72px;
+    aspect-ratio: 1;
+    border-radius: .25rem;
+    overflow: hidden;
+    background: #8fb0d2;
+}
+.ak-product-media img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.ak-product-main {
+    min-width: 0;
+}
+.ak-product-name {
+    display: block;
+    font-weight: 700;
+    cursor: pointer;
+}
+.ak-product-desc {
+    margin: .2rem 0 0;
+    color: var(--ak-text-muted);
+    font-size: .9rem;
+}
+.ak-product-price {
+    flex-shrink: 0;
+    font-weight: 700;
+    align-self: start;
+    padding-top: .15rem;
+    white-space: nowrap;
+}
+.ak-product-controls {
+    display: inline-flex;
+    align-items: center;
+    gap: .55rem;
+    margin-top: .6rem;
+}
+.ak-product-controls .ak-product-qty.form-select {
+    flex: 0 0 4.4rem;
+    width: 4.4rem;
+    min-width: 4.4rem;
+    max-width: 4.4rem;
+    padding-left: .65rem;
+    padding-right: 1.65rem;
+}
+.ak-product-qty-label,
+.ak-product-stock {
+    color: var(--ak-text-muted);
+    font-size: .85rem;
+    font-weight: 600;
+}
+.ak-product-total {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    gap: 2.25rem;
+    align-items: center;
+    margin-top: 1.6rem;
+    padding-top: 1.15rem;
+    border-top: 1px solid var(--ak-border);
+}
+.ak-product-total span {
+    grid-column: 2;
+    color: var(--ak-text-muted);
+    font-weight: 700;
+}
+.ak-product-total strong {
+    min-width: 5rem;
+    text-align: right;
+}
+
+@media (max-width: 575.98px) {
+    .ak-product-item {
+        grid-template-columns: 22px minmax(0, 1fr) auto;
+        gap: .7rem;
+        padding: 1rem 0 1.2rem;
+    }
+    .ak-product-item.has-image {
+        grid-template-columns: 22px 56px minmax(0, 1fr) auto;
+    }
+    .ak-product-media {
+        width: 56px;
+    }
+    .ak-product-price {
+        grid-column: 3;
+        grid-row: 1;
+        font-size: .95rem;
+    }
+    .ak-product-item.has-image .ak-product-price { grid-column: 4; grid-row: 1; }
+    .ak-product-item.has-image .ak-product-main { grid-column: 3; }
+    .ak-product-controls { gap: .45rem; }
+    .ak-product-controls .ak-product-qty.form-select {
+        flex-basis: 4rem;
+        width: 4rem;
+        min-width: 4rem;
+        max-width: 4rem;
+    }
+    .ak-product-total { grid-template-columns: 1fr auto auto; gap: 1rem; }
+}
+
 /* ---- Success state --------------------------------------------------------*/
 .ak-success { text-align: center; padding: 3rem 1.9rem; }
 .ak-success-badge {

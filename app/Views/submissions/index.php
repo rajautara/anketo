@@ -59,7 +59,10 @@
                                     <?php else : ?>
                                         <?php
                                             $raw = (string) $answer['value'];
-                                            if (str_starts_with(trim($raw), '[')) {
+                                            $productAnswer = \App\Libraries\ProductList::formatAnswer($raw);
+                                            if ($productAnswer !== null) {
+                                                $raw = $productAnswer;
+                                            } elseif (str_starts_with(trim($raw), '[')) {
                                                 $decoded = json_decode($raw, true);
                                                 if (is_array($decoded)) {
                                                     $raw = implode(', ', $decoded);

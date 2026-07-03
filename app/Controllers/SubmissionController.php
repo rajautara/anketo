@@ -2,6 +2,7 @@
 
 namespace App\Controllers;
 
+use App\Libraries\ProductList;
 use App\Models\FormFieldModel;
 use App\Models\FormModel;
 use App\Models\FormSubmissionModel;
@@ -153,6 +154,11 @@ class SubmissionController extends BaseController
 
         if (! empty($answer['file_path'])) {
             return $answer['value'] ?? $answer['file_path'];
+        }
+
+        $productAnswer = ProductList::formatAnswer($answer['value']);
+        if ($productAnswer !== null) {
+            return $productAnswer;
         }
 
         if ($answer['value'] !== null && str_starts_with(trim($answer['value']), '[')) {
