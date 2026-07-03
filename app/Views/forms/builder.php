@@ -4,7 +4,7 @@
 
 <?= $this->section('pageStyles') ?>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css">
-<link rel="stylesheet" href="<?= base_url('assets/css/builder.css') ?>">
+<link rel="stylesheet" href="<?= base_url('assets/css/builder.css') ?>?v=<?= filemtime(FCPATH . 'assets/css/builder.css') ?>">
 <?= $this->endSection() ?>
 
 <?= $this->section('main') ?>
@@ -70,7 +70,7 @@
     </div>
 
     <!-- Canvas -->
-    <div class="col-12 col-lg-6 ak-builder-col">
+    <div class="col-12 col-lg-9 ak-builder-col">
         <div class="card">
             <div class="card-header">Form fields</div>
             <div class="card-body">
@@ -83,13 +83,22 @@
         </div>
     </div>
 
-    <!-- Properties -->
-    <div class="col-12 col-lg-3 ak-builder-col">
-        <div class="card">
-            <div class="card-header">Properties</div>
-            <div class="card-body">
-                <p id="properties-panel-empty">Select a field to edit its properties.</p>
-                <form id="properties-form" class="d-none"></form>
+</div>
+
+<!-- Field properties modal (form is populated per field by the builder JS) -->
+<div class="modal fade" id="field-modal" tabindex="-1" aria-labelledby="field-modal-title" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="field-modal-title">Edit field</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="properties-form"></form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="save-field">Save</button>
             </div>
         </div>
     </div>
@@ -100,7 +109,7 @@
 <?= $this->section('pageScripts') ?>
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js"></script>
-<script src="<?= base_url('assets/js/builder-conditions.js') ?>"></script>
+<script src="<?= base_url('assets/js/builder-conditions.js') ?>?v=<?= filemtime(FCPATH . 'assets/js/builder-conditions.js') ?>"></script>
 <script>
 (function () {
     'use strict';
@@ -144,12 +153,23 @@
 
     var canvas = document.getElementById('field-canvas');
     var emptyHint = document.getElementById('empty-canvas-hint');
-    var propertiesEmpty = document.getElementById('properties-panel-empty');
     var propertiesForm = document.getElementById('properties-form');
-    var selectedId = null;
+    var fieldModalEl = document.getElementById('field-modal');
+    var fieldModalDialog = fieldModalEl.querySelector('.modal-dialog');
+    var fieldModalTitle = document.getElementById('field-modal-title');
+    // focus:false disables Bootstrap's FocusTrap so the image size bar's percent
+    // input (appended to document.body, outside the modal) stays typeable.
+    var fieldModal = new bootstrap.Modal(fieldModalEl, { focus: false });
+    var currentField = null;
+    var currentLi = null;
     var paraQuill = null;
     var paraSizeBar = null;
+    var paraSizeInput = null;
     var paraSizeImg = null;
+    var paraOverlay = null;
+    var paraDrag = null;
+    var paraDragJustEnded = false;
+    var paraRafId = null;
 
     function apiFetch(url, options) {
         options = options || {};
@@ -194,22 +214,30 @@
         label.className = 'field-row-label flex-grow-1 text-truncate';
         label.textContent = field.label + (field.is_required ? ' *' : '');
 
+        var edit = document.createElement('button');
+        edit.type = 'button';
+        edit.className = 'btn btn-sm btn-outline-secondary';
+        edit.innerHTML = '<i class="bi bi-pencil"></i>';
+        edit.addEventListener('click', function () {
+            // Resolve from the registry at click time: saves replace the object
+            // in FIELDS, and the closure's `field` would go stale.
+            openFieldModal(FIELDS[field.id] || field, li);
+        });
+
         var del = document.createElement('button');
         del.type = 'button';
         del.className = 'btn btn-sm btn-outline-danger';
         del.innerHTML = '<i class="bi bi-trash"></i>';
-        del.addEventListener('click', function (evt) {
-            evt.stopPropagation();
+        del.addEventListener('click', function () {
             deleteField(field.id, li);
         });
 
         top.appendChild(handle);
         top.appendChild(icon);
         top.appendChild(label);
+        top.appendChild(edit);
         top.appendChild(del);
         li.appendChild(top);
-
-        li.addEventListener('click', function () { selectField(li, field); });
 
         return li;
     }
@@ -241,20 +269,17 @@
             li.remove();
             unregisterField(fieldId);
             updateEmptyHint();
-            if (selectedId === fieldId) { clearProperties(); }
         }).catch(function (err) { alert(err.message); });
     }
 
-    function clearProperties() {
-        selectedId = null;
+    // Emptying the form kills per-open listeners and keeps ids (#field-required,
+    // #conditions-container, #ak-para-editor, ...) singletons across opens.
+    function onModalHidden() {
+        hideImageOverlay();
         paraQuill = null;
-        hideImageSizeBar();
-        propertiesForm.classList.add('d-none');
         propertiesForm.innerHTML = '';
-        propertiesEmpty.classList.remove('d-none');
-        Array.prototype.forEach.call(canvas.querySelectorAll('.field-row.selected'), function (el) {
-            el.classList.remove('selected');
-        });
+        currentField = null;
+        currentLi = null;
     }
 
     function optionRowHtml(opt) {
@@ -270,18 +295,15 @@
         return div.innerHTML;
     }
 
-    function selectField(li, field) {
-        selectedId = field.id;
-        propertiesEmpty.classList.add('d-none');
-        propertiesForm.classList.remove('d-none');
-
-        Array.prototype.forEach.call(canvas.querySelectorAll('.field-row.selected'), function (el) {
-            el.classList.remove('selected');
-        });
-        li.classList.add('selected');
-
+    function openFieldModal(field, li) {
+        currentField = field;
+        currentLi = li;
         paraQuill = null;
-        hideImageSizeBar();
+        hideImageOverlay();
+
+        var meta = FIELD_META[field.field_type] || { icon: '', label: field.field_type };
+        fieldModalTitle.textContent = meta.label + ' — ' + field.label;
+
         var type = field.field_type;
         var isOptionType = OPTION_TYPES.indexOf(type) !== -1;
         var isParagraph = type === 'paragraph';
@@ -326,7 +348,6 @@
         }
 
         html += '<div id="conditions-container"></div>';
-        html += '<button type="button" class="btn btn-primary btn-sm w-100 mt-2" id="save-field">Save</button>';
 
         propertiesForm.innerHTML = html;
 
@@ -334,26 +355,6 @@
             propertiesForm.querySelector('#add-option').addEventListener('click', function () {
                 propertiesForm.querySelector('#options-list').insertAdjacentHTML('beforeend', optionRowHtml({ label: '' }));
             });
-            propertiesForm.addEventListener('click', function (evt) {
-                if (evt.target.closest('.remove-option')) {
-                    evt.target.closest('.option-row').remove();
-                }
-            });
-        }
-
-        if (isParagraph && window.Quill) {
-            var wrap = propertiesForm.querySelector('#ak-para-editor-wrap');
-            var ta = wrap.querySelector('textarea[name="body"]');
-            var edDiv = document.createElement('div');
-            edDiv.id = 'ak-para-editor';
-            wrap.insertBefore(edDiv, ta);
-            ta.classList.add('d-none');
-            paraQuill = new Quill(edDiv, {
-                theme: 'snow',
-                modules: { toolbar: { container: PARA_TOOLBAR, handlers: { image: paragraphImageHandler } } }
-            });
-            if (ta.value.trim() !== '') { paraQuill.clipboard.dangerouslyPasteHTML(ta.value); }
-            setupParagraphImageResize();
         }
 
         var weekdaysBox = propertiesForm.querySelector('#appt-weekdays');
@@ -368,9 +369,36 @@
             window.AkBuilderConditions.render(propertiesForm.querySelector('#conditions-container'), field, otherFieldsFor(field));
         }
 
-        propertiesForm.querySelector('#save-field').addEventListener('click', function () {
-            saveField(field, li);
+        // The paragraph Quill editor is initialised on shown.bs.modal instead of
+        // here: it (and the image-overlay math) needs a laid-out, stationary DOM,
+        // and the dialog carries a transform during the fade transition.
+        fieldModalDialog.classList.toggle('modal-xl', isParagraph);
+        fieldModalDialog.classList.toggle('modal-lg', !isParagraph);
+        fieldModal.show();
+    }
+
+    function initParagraphEditor() {
+        if (!currentField || currentField.field_type !== 'paragraph' || !window.Quill || paraQuill) { return; }
+        var wrap = propertiesForm.querySelector('#ak-para-editor-wrap');
+        if (!wrap) { return; }
+        var ta = wrap.querySelector('textarea[name="body"]');
+        var edDiv = document.createElement('div');
+        edDiv.id = 'ak-para-editor';
+        wrap.insertBefore(edDiv, ta);
+        ta.classList.add('d-none');
+        paraQuill = new Quill(edDiv, {
+            theme: 'snow',
+            modules: { toolbar: { container: PARA_TOOLBAR, handlers: { image: paragraphImageHandler } } }
         });
+        if (ta.value.trim() !== '') { paraQuill.clipboard.dangerouslyPasteHTML(ta.value); }
+        setupParagraphImageResize();
+    }
+
+    function onModalShown() {
+        initParagraphEditor();
+        // Manual autofocus — the modal is created with focus:false.
+        var first = propertiesForm.querySelector('[name="label"]');
+        if (first) { first.focus(); }
     }
 
     function appointmentConfigHtml(cfg) {
@@ -420,18 +448,31 @@
         input.click();
     }
 
-    // Click an image in the paragraph editor to show a width picker. Widths are
+    // Click an image in the paragraph editor to select it: a fixed-position
+    // overlay with corner drag-handles plus a floating size bar (preset widths,
+    // an exact percent input, and a reset control). Widths are stored as integer
     // percentages so they scale correctly from the narrow builder to the wide
     // public form; applied via Quill's `width` image format so getSemanticHTML
     // persists them (and CSS max-width:100% still prevents any overflow).
     function setupParagraphImageResize() {
         function onEditorPress(e) {
+            if (paraDrag || paraDragJustEnded) { return; } // stray mouseup/click from a handle drag
             var img = imgFromNode(e.target);
-            if (img) { showImageSizeBar(img); }
-            else { hideImageSizeBar(); }
+            if (img) { selectParagraphImage(img); }
+            else { hideImageOverlay(); }
         }
         paraQuill.root.addEventListener('click', onEditorPress);
         paraQuill.root.addEventListener('mouseup', onEditorPress);
+        paraQuill.on('text-change', onParaTextChange);
+    }
+
+    // Editor edits can delete the selected image (Backspace, undo, `clean`)
+    // or change its width format — tear down or refresh accordingly.
+    function onParaTextChange() {
+        if (!paraSizeImg || paraDrag) { return; }
+        if (!paraQuill || !paraQuill.root.contains(paraSizeImg)) { hideImageOverlay(); return; }
+        refreshSizeInput();
+        requestReposition();
     }
 
     // Resolve the <img> from a clicked node whether it is the image itself,
@@ -444,10 +485,42 @@
         return node.querySelector ? node.querySelector('img') : null;
     }
 
-    function showImageSizeBar(img) {
-        hideImageSizeBar();
+    function selectParagraphImage(img) {
+        if (img === paraSizeImg) { requestReposition(); return; }
+        hideImageOverlay();
         paraSizeImg = img;
 
+        // Put Quill's selection on the embed so Backspace/Delete removes it.
+        var blot = (window.Quill && Quill.find) ? Quill.find(img) : null;
+        if (blot && typeof paraQuill.getIndex === 'function') {
+            paraQuill.setSelection(paraQuill.getIndex(blot), 1, 'user');
+        }
+        // The rect height jumps once a still-loading image gets its real size.
+        if (!img.complete) { img.addEventListener('load', requestReposition, { once: true }); }
+
+        buildImageOverlay();
+        buildImageSizeBar(img);
+        positionImageOverlay();
+    }
+
+    function buildImageOverlay() {
+        var overlay = document.createElement('div');
+        overlay.className = 'ak-img-overlay';
+        ['nw', 'ne', 'sw', 'se'].forEach(function (corner) {
+            var h = document.createElement('div');
+            h.className = 'ak-img-handle';
+            h.setAttribute('data-corner', corner);
+            h.addEventListener('pointerdown', startHandleDrag);
+            h.addEventListener('pointermove', onHandleMove);
+            h.addEventListener('pointerup', endHandleDrag);
+            h.addEventListener('pointercancel', function () { cancelDrag(); });
+            overlay.appendChild(h);
+        });
+        document.body.appendChild(overlay);
+        paraOverlay = overlay;
+    }
+
+    function buildImageSizeBar(img) {
         var bar = document.createElement('div');
         bar.className = 'ak-img-size-bar';
 
@@ -462,28 +535,204 @@
             b.textContent = w;
             b.addEventListener('mousedown', function (ev) {
                 ev.preventDefault(); // keep the editor's image selection
-                applyImageWidth(img, w);
-                hideImageSizeBar();
+                commitImageWidthPercent(img, parseInt(w, 10));
             });
             bar.appendChild(b);
         });
 
+        var input = document.createElement('input');
+        input.type = 'number';
+        input.className = 'ak-img-size-input';
+        input.min = '1';
+        input.max = '100';
+        input.step = '1';
+        input.addEventListener('change', function () { commitSizeInput(img, input); });
+        input.addEventListener('keydown', function (ev) {
+            if (ev.key === 'Enter') { ev.preventDefault(); commitSizeInput(img, input); }
+        });
+        bar.appendChild(input);
+
+        var suffix = document.createElement('span');
+        suffix.className = 'ak-img-size-suffix';
+        suffix.textContent = '%';
+        bar.appendChild(suffix);
+
+        var reset = document.createElement('button');
+        reset.type = 'button';
+        reset.title = 'Original size';
+        reset.innerHTML = '<i class="bi bi-arrow-counterclockwise"></i>';
+        reset.addEventListener('mousedown', function (ev) {
+            ev.preventDefault();
+            commitImageWidthPercent(img, null);
+        });
+        bar.appendChild(reset);
+
         document.body.appendChild(bar);
         paraSizeBar = bar;
-
-        // Fixed positioning (viewport coords) — avoids overflow/containing-block
-        // clipping from the properties panel.
-        var r = img.getBoundingClientRect();
-        var top = r.bottom + 6;
-        var left = Math.max(8, r.left);
-        bar.style.top = top + 'px';
-        bar.style.left = left + 'px';
+        paraSizeInput = input;
+        refreshSizeInput();
     }
 
-    function hideImageSizeBar() {
+    function commitSizeInput(img, input) {
+        var n = parseInt(input.value, 10);
+        if (isNaN(n)) { refreshSizeInput(); return; }
+        commitImageWidthPercent(img, Math.min(100, Math.max(1, n)));
+    }
+
+    // Show the stored percent in the input; fall back to the rendered percent
+    // (as a placeholder) when no explicit width is set.
+    function refreshSizeInput() {
+        if (!paraSizeInput || !paraSizeImg) { return; }
+        var pct = imgWidthPercent(paraSizeImg);
+        if (pct !== null) {
+            paraSizeInput.value = pct;
+            paraSizeInput.placeholder = '';
+        } else {
+            paraSizeInput.value = '';
+            paraSizeInput.placeholder = String(renderedPercent(paraSizeImg));
+        }
+    }
+
+    function imgWidthPercent(img) {
+        var m = /^(\d{1,3})%$/.exec(img.getAttribute('width') || '');
+        return m ? parseInt(m[1], 10) : null;
+    }
+
+    function renderedPercent(img) {
+        var parent = img.parentElement;
+        var pw = parent ? parent.getBoundingClientRect().width : 0;
+        if (!pw) { return 100; }
+        return Math.min(100, Math.max(1, Math.round(img.getBoundingClientRect().width / pw * 100)));
+    }
+
+    // Single source of truth for overlay + bar placement (viewport coords,
+    // clamped so both stay visible even when the image is taller than the
+    // viewport — the anchor rect's bottom edge can be far below the fold).
+    function positionImageOverlay() {
+        if (!paraQuill || !paraSizeImg || !paraQuill.root.contains(paraSizeImg)) {
+            hideImageOverlay();
+            return;
+        }
+        var r = paraSizeImg.getBoundingClientRect();
+        if (paraOverlay) {
+            paraOverlay.style.top = r.top + 'px';
+            paraOverlay.style.left = r.left + 'px';
+            paraOverlay.style.width = r.width + 'px';
+            paraOverlay.style.height = r.height + 'px';
+        }
+        if (paraSizeBar) {
+            var top = Math.max(8, Math.min(r.bottom + 6, window.innerHeight - paraSizeBar.offsetHeight - 8));
+            var left = Math.min(Math.max(8, r.left), window.innerWidth - paraSizeBar.offsetWidth - 8);
+            paraSizeBar.style.top = top + 'px';
+            paraSizeBar.style.left = left + 'px';
+        }
+    }
+
+    function requestReposition() {
+        if (!paraSizeImg || paraRafId !== null) { return; }
+        paraRafId = requestAnimationFrame(function () {
+            paraRafId = null;
+            positionImageOverlay();
+        });
+    }
+
+    function hideImageOverlay() {
+        if (paraRafId !== null) { cancelAnimationFrame(paraRafId); paraRafId = null; }
+        paraDrag = null;
+        // If focus is inside the size bar, hand it back to the editor before the
+        // bar is removed — otherwise focus drops to <body>, outside the modal,
+        // and Bootstrap's Escape-to-close listener never hears the next keydown.
+        if (paraSizeBar && paraSizeBar.contains(document.activeElement) && paraQuill) {
+            paraQuill.root.focus();
+        }
         if (paraSizeBar && paraSizeBar.parentNode) { paraSizeBar.parentNode.removeChild(paraSizeBar); }
+        if (paraOverlay && paraOverlay.parentNode) { paraOverlay.parentNode.removeChild(paraOverlay); }
         paraSizeBar = null;
+        paraSizeInput = null;
+        paraOverlay = null;
         paraSizeImg = null;
+    }
+
+    function startHandleDrag(e) {
+        if (!paraSizeImg) { return; }
+        e.preventDefault(); // no native image drag / text selection
+        var container = paraSizeImg.parentElement ? paraSizeImg.parentElement.getBoundingClientRect().width : 0;
+        if (!container) { return; }
+        paraDrag = {
+            corner: e.target.getAttribute('data-corner'),
+            handle: e.target,
+            pointerId: e.pointerId,
+            startX: e.clientX,
+            startWidth: paraSizeImg.getBoundingClientRect().width,
+            containerWidth: container,
+            originalAttr: paraSizeImg.getAttribute('width'),
+            lastPx: null
+        };
+        e.target.setPointerCapture(e.pointerId);
+        // Bound undo granularity around the burst of mid-drag mutations.
+        if (paraQuill && paraQuill.history) { paraQuill.history.cutoff(); }
+    }
+
+    function onHandleMove(e) {
+        if (!paraDrag || !paraSizeImg) { return; }
+        var dx = e.clientX - paraDrag.startX;
+        var w = (paraDrag.corner === 'nw' || paraDrag.corner === 'sw')
+            ? paraDrag.startWidth - dx
+            : paraDrag.startWidth + dx;
+        var minPx = Math.max(32, paraDrag.containerWidth * 0.05);
+        w = Math.round(Math.min(paraDrag.containerWidth, Math.max(minPx, w)));
+        paraDrag.lastPx = w;
+        // Live feedback with a real px attribute (true reflow); the canonical
+        // percent is committed through Quill on pointerup.
+        paraSizeImg.setAttribute('width', w);
+        if (paraSizeInput) {
+            paraSizeInput.value = Math.min(100, Math.max(1, Math.round(w / paraDrag.containerWidth * 100)));
+        }
+        requestReposition();
+    }
+
+    function endHandleDrag(e) {
+        if (!paraDrag) { return; }
+        var drag = paraDrag;
+        paraDrag = null;
+        flagDragJustEnded();
+        if (drag.handle.hasPointerCapture && drag.handle.hasPointerCapture(e.pointerId)) {
+            drag.handle.releasePointerCapture(e.pointerId);
+        }
+        if (drag.lastPx === null || !paraSizeImg) { requestReposition(); return; }
+        commitImageWidthPercent(paraSizeImg, Math.min(100, Math.max(1, Math.round(drag.lastPx / drag.containerWidth * 100))));
+    }
+
+    // Compatibility mouseup/click events trail a pointer drag; briefly flag the
+    // end of a drag so they cannot dismiss or re-select through onEditorPress.
+    function flagDragJustEnded() {
+        paraDragJustEnded = true;
+        setTimeout(function () { paraDragJustEnded = false; }, 0);
+    }
+
+    function cancelDrag() {
+        if (!paraDrag) { return; }
+        var drag = paraDrag;
+        paraDrag = null;
+        flagDragJustEnded();
+        if (drag.handle.hasPointerCapture && drag.handle.hasPointerCapture(drag.pointerId)) {
+            drag.handle.releasePointerCapture(drag.pointerId);
+        }
+        if (paraSizeImg) {
+            if (drag.originalAttr === null) { paraSizeImg.removeAttribute('width'); }
+            else { paraSizeImg.setAttribute('width', drag.originalAttr); }
+        }
+        refreshSizeInput();
+        requestReposition();
+    }
+
+    // All size changes funnel through here so the Quill Delta records them.
+    // pct is an integer 1-100, or null to reset to natural size.
+    function commitImageWidthPercent(img, pct) {
+        applyImageWidth(img, pct === null ? false : pct + '%');
+        if (paraQuill && paraQuill.history) { paraQuill.history.cutoff(); }
+        refreshSizeInput();
+        requestReposition();
     }
 
     function applyImageWidth(img, width) {
@@ -491,9 +740,28 @@
         var blot = (window.Quill && Quill.find) ? Quill.find(img) : null;
         if (blot && typeof paraQuill.getIndex === 'function') {
             paraQuill.formatText(paraQuill.getIndex(blot), 1, 'width', width, 'user');
+        } else if (width === false) {
+            img.removeAttribute('width');
         } else {
             img.setAttribute('width', width);
         }
+    }
+
+    // getSemanticHTML round-trips image width attributes today, but that is a
+    // Quill internal detail — re-assert the live editor's widths onto the
+    // serialized markup so a Quill change can't silently drop sizes.
+    function mergeImgWidths(html) {
+        var liveImgs = paraQuill.root.querySelectorAll('img');
+        if (liveImgs.length === 0) { return html; }
+        var doc = new DOMParser().parseFromString(html, 'text/html');
+        var outImgs = doc.body.querySelectorAll('img');
+        if (outImgs.length !== liveImgs.length) { return html; }
+        for (var i = 0; i < outImgs.length; i++) {
+            var w = liveImgs[i].getAttribute('width');
+            if (w === null) { outImgs[i].removeAttribute('width'); }
+            else { outImgs[i].setAttribute('width', w); }
+        }
+        return doc.body.innerHTML;
     }
 
     function saveField(field, li) {
@@ -517,7 +785,7 @@
             // Quill's semantic HTML (clean ul/ol + text-align styles) when the
             // editor is active, else the raw textarea (Quill-unavailable fallback).
             if (paraQuill) {
-                payload.body = paraQuill.getLength() > 1 ? paraQuill.getSemanticHTML() : '';
+                payload.body = paraQuill.getLength() > 1 ? mergeImgWidths(paraQuill.getSemanticHTML()) : '';
             } else {
                 payload.body = bodyInput.value;
             }
@@ -556,6 +824,7 @@
             registerField(updated);
             li.querySelector('.field-row-label').textContent = updated.label + (updated.is_required ? ' *' : '');
             li.dataset.type = updated.field_type;
+            fieldModal.hide();
         }).catch(function (err) { alert(err.message); });
     }
 
@@ -586,7 +855,7 @@
                 canvas.insertBefore(row, ref);
                 updateEmptyHint();
                 syncOrder();
-                selectField(row, field);
+                openFieldModal(field, row);
             }).catch(function (err) { alert(err.message); });
         },
         onUpdate: function () { syncOrder(); }
@@ -602,13 +871,42 @@
         });
     }
 
-    // Dismiss the image size bar when clicking away or scrolling.
-    document.addEventListener('mousedown', function (e) {
-        if (paraSizeBar && !paraSizeBar.contains(e.target) && !(e.target && e.target.tagName === 'IMG')) {
-            hideImageSizeBar();
+    // Field modal wiring (bound once; the form body is rebuilt per open).
+    fieldModalEl.addEventListener('shown.bs.modal', onModalShown);
+    fieldModalEl.addEventListener('hidden.bs.modal', onModalHidden);
+    document.getElementById('save-field').addEventListener('click', function () {
+        if (currentField && currentLi) { saveField(currentField, currentLi); }
+    });
+    // No submit button exists, but a form with a single text input still
+    // implicitly submits on Enter — which would reload the page.
+    propertiesForm.addEventListener('submit', function (e) { e.preventDefault(); });
+    propertiesForm.addEventListener('click', function (evt) {
+        if (evt.target.closest('.remove-option')) {
+            evt.target.closest('.option-row').remove();
         }
+    });
+
+    // Image overlay/bar: dismiss on outside pointerdown, reposition (never
+    // hide) on scroll/resize (capture also catches .modal-body scrolls).
+    document.addEventListener('pointerdown', function (e) {
+        if (!paraSizeBar && !paraOverlay) { return; }
+        if (paraSizeBar && paraSizeBar.contains(e.target)) { return; }
+        if (paraOverlay && paraOverlay.contains(e.target)) { return; }
+        if (paraQuill && paraQuill.root.contains(e.target) && imgFromNode(e.target)) { return; }
+        hideImageOverlay();
     }, true);
-    window.addEventListener('scroll', function () { hideImageSizeBar(); }, true);
+    window.addEventListener('scroll', function () { requestReposition(); }, true);
+    window.addEventListener('resize', function () { requestReposition(); });
+    // Capture phase so an Escape that dismisses the image overlay (or cancels a
+    // drag) is consumed before Bootstrap's bubble listener closes the modal.
+    document.addEventListener('keydown', function (e) {
+        if (e.key !== 'Escape') { return; }
+        if (paraDrag) { cancelDrag(); }
+        else if (paraSizeImg) { hideImageOverlay(); }
+        else { return; }
+        e.stopPropagation();
+        e.preventDefault();
+    }, true);
 
     renderInitial();
 })();
