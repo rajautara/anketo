@@ -111,7 +111,7 @@ class FormFieldController extends BaseController
         $this->fieldModel->update($fieldId, [
             'label'            => $label,
             'field_key'        => $fieldKey,
-            'placeholder'      => $isStaticDisplay ? null : (($body['placeholder'] ?? '') !== '' ? $body['placeholder'] : null),
+            'placeholder'      => ($isStaticDisplay || $fieldType === 'address') ? null : (($body['placeholder'] ?? '') !== '' ? $body['placeholder'] : null),
             'help_text'        => $isStaticDisplay ? null : (($body['help_text'] ?? '') !== '' ? $body['help_text'] : null),
             'options'          => $options,
             'is_required'      => ($isStaticDisplay || ($fieldType === 'text' && (bool) ($options['is_hidden'] ?? false))) ? false : (bool) ($body['is_required'] ?? false),

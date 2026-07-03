@@ -62,6 +62,20 @@
         }).filter(function (value) { return value !== ''; });
     }
 
+    function addressPart(wrap, part) {
+        var el = wrap ? wrap.querySelector('[name$="[' + part + ']"]') : null;
+        return el ? String(el.value || '').trim() : '';
+    }
+
+    function addressValue(wrap) {
+        var cityLine = [addressPart(wrap, 'city'), addressPart(wrap, 'state_province'), addressPart(wrap, 'postal_zip_code')]
+            .filter(function (value) { return value !== ''; })
+            .join(', ');
+        return [addressPart(wrap, 'street_address'), addressPart(wrap, 'street_address_2'), cityLine, addressPart(wrap, 'country')]
+            .filter(function (value) { return value !== ''; })
+            .join(', ');
+    }
+
     function valueFor(wrap, cfg) {
         if (cfg.type === 'checkbox') {
             return choiceLabels(wrap, cfg, 'input[type=checkbox]:checked').join(', ');
@@ -86,6 +100,9 @@
         }
         if (cfg.type === 'product_list') {
             return productValues(wrap).join(', ');
+        }
+        if (cfg.type === 'address') {
+            return addressValue(wrap);
         }
 
         var input = wrap.querySelector('input, textarea, select');

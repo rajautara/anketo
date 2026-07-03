@@ -3,6 +3,7 @@
 namespace App\Controllers;
 
 use App\Libraries\AppointmentAvailability;
+use App\Libraries\AddressField;
 use App\Libraries\ConditionEvaluator;
 use App\Libraries\FormulaEvaluator;
 use App\Libraries\ProductList;
@@ -142,6 +143,7 @@ class PublicFormController extends BaseController
         $fields      = $this->fieldModel->getForForm($form['id']);
         $postAnswers = $this->request->getPost('answers');
         $postAnswers = is_array($postAnswers) ? $postAnswers : [];
+        $logicAnswers = $this->logicAnswers($fields, $postAnswers);
         $formulaAnswers = $this->formulaAnswers($fields, $postAnswers);
 
         $errors = [];
@@ -162,7 +164,7 @@ class PublicFormController extends BaseController
             // effective value after evaluating any `require` rules.
             $flags = $this->conditions->evaluate(
                 $field['conditions']['rules'] ?? [],
-                $postAnswers,
+                $logicAnswers,
                 (bool) $field['is_required']
             );
             if (! $flags['visible']) {
@@ -175,7 +177,7 @@ class PublicFormController extends BaseController
             // Automated update fields: recompute server-side and ignore any
             // client-submitted value. Updates supersede legacy calc formulas.
             if (! empty($field['conditions']['updates']) && $this->isValueUpdateTarget($type)) {
-                $computed = $this->updates->evaluate($field['conditions']['updates'], $postAnswers, $formulaAnswers);
+                $computed = $this->updates->evaluate($field['conditions']['updates'], $logicAnswers, $formulaAnswers);
                 if ($computed !== null && $computed !== '') {
                     $fieldError = $this->validateScalarField($field, $computed);
                     if ($fieldError !== null) {
@@ -235,6 +237,17 @@ class PublicFormController extends BaseController
                     $errors[$key] = $checkboxError;
                 }
                 $toSave[] = $this->answerRow($field, $value, null);
+
+                continue;
+            }
+
+            if ($type === 'address') {
+                $parts = AddressField::sanitize($postAnswers[$key] ?? []);
+                $addressError = AddressField::validationError($field, $parts);
+                if ($addressError !== null) {
+                    $errors[$key] = $addressError;
+                }
+                $toSave[] = $this->answerRow($field, AddressField::storedValue($parts), null);
 
                 continue;
             }
@@ -401,6 +414,33 @@ class PublicFormController extends BaseController
     }
 
     /**
+     * @param array<int,array<string,mixed>> $fields
+     * @param array<string,mixed>            $answers
+     *
+     * @return array<string,mixed>
+     */
+    private function logicAnswers(array $fields, array $answers): array
+    {
+        $out = $answers;
+
+        foreach ($fields as $field) {
+            if (($field['field_type'] ?? '') !== 'address') {
+                continue;
+            }
+
+            $key = (string) ($field['field_key'] ?? '');
+            if ($key === '') {
+                continue;
+            }
+
+            $parts = AddressField::sanitize($answers[$key] ?? []);
+            $out[$key] = AddressField::isBlank($parts) ? '' : AddressField::formatParts($parts, ', ');
+        }
+
+        return $out;
+    }
+
+    /**
      * Formula fields should see choice labels, not generated internal values
      * like option_1. Condition matching still uses the raw submitted values.
      *
@@ -427,6 +467,15 @@ class PublicFormController extends BaseController
                     $out[$key] = (string) $total;
                     $out[(string) ($field['label'] ?? '')] = (string) $total;
                 }
+
+                continue;
+            }
+
+            if (($field['field_type'] ?? '') === 'address') {
+                $parts = AddressField::sanitize($value);
+                $displayValue = AddressField::isBlank($parts) ? '' : AddressField::formatParts($parts, ', ');
+                $out[$key] = $displayValue;
+                $out[(string) ($field['label'] ?? '')] = $displayValue;
 
                 continue;
             }

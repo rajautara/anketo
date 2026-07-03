@@ -18,6 +18,7 @@ if (! function_exists('field_type_label')) {
             'appointment' => 'Appointment',
             'product_list' => 'Product List',
             'review_before_submit' => 'Review Before Submit',
+            'address' => 'Address',
         ];
 
         return $labels[$type] ?? ucfirst($type);
@@ -42,6 +43,7 @@ if (! function_exists('field_type_icon')) {
             'appointment' => 'bi-calendar-check',
             'product_list' => 'bi-bag',
             'review_before_submit' => 'bi-card-checklist',
+            'address' => 'bi-geo-alt',
         ];
 
         return $icons[$type] ?? 'bi-input-cursor-text';

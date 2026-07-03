@@ -50,11 +50,70 @@ final class SubmissionAnswerFormatterTest extends CIUnitTestCase
         ));
     }
 
+    public function testStoresAddressAsJson(): void
+    {
+        $stored = $this->formatter->storedValueForField($this->addressField(), [
+            'street_address'    => '123 Jalan Ampang',
+            'street_address_2'  => 'Unit 5',
+            'city'              => 'Kuala Lumpur',
+            'state_province'    => 'Kuala Lumpur',
+            'postal_zip_code'   => '50450',
+            'country'           => 'Malaysia',
+        ]);
+
+        $this->assertIsString($stored);
+        $this->assertSame([
+            'street_address'    => '123 Jalan Ampang',
+            'street_address_2'  => 'Unit 5',
+            'city'              => 'Kuala Lumpur',
+            'state_province'    => 'Kuala Lumpur',
+            'postal_zip_code'   => '50450',
+            'country'           => 'Malaysia',
+        ], json_decode($stored, true));
+    }
+
+    public function testBlankAddressStoresNull(): void
+    {
+        $this->assertNull($this->formatter->storedValueForField($this->addressField(), [
+            'street_address'    => '',
+            'street_address_2'  => '',
+            'city'              => '',
+            'state_province'    => '',
+            'postal_zip_code'   => '',
+            'country'           => '',
+        ]));
+    }
+
+    public function testFormatsAddressWithoutBlankLineTwo(): void
+    {
+        $stored = json_encode([
+            'street_address'    => '123 Jalan Ampang',
+            'street_address_2'  => '',
+            'city'              => 'Kuala Lumpur',
+            'state_province'    => 'Kuala Lumpur',
+            'postal_zip_code'   => '50450',
+            'country'           => 'Malaysia',
+        ]);
+
+        $this->assertSame(
+            "123 Jalan Ampang\nKuala Lumpur, Kuala Lumpur, 50450\nMalaysia",
+            $this->formatter->format(['value' => $stored, 'file_path' => null], $this->addressField())
+        );
+    }
+
     private function choiceField(string $type, array $options): array
     {
         return [
             'field_type' => $type,
             'options'    => $options,
+        ];
+    }
+
+    private function addressField(): array
+    {
+        return [
+            'field_type' => 'address',
+            'options'    => null,
         ];
     }
 }

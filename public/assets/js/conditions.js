@@ -23,6 +23,20 @@
     }
 
     // ---- read current answers from the DOM ---------------------------------
+    function addressPart(wrap, part) {
+        var el = wrap ? wrap.querySelector('[name$="[' + part + ']"]') : null;
+        return el ? String(el.value || '').trim() : '';
+    }
+
+    function addressValue(wrap) {
+        var cityLine = [addressPart(wrap, 'city'), addressPart(wrap, 'state_province'), addressPart(wrap, 'postal_zip_code')]
+            .filter(function (value) { return value !== ''; })
+            .join(', ');
+        return [addressPart(wrap, 'street_address'), addressPart(wrap, 'street_address_2'), cityLine, addressPart(wrap, 'country')]
+            .filter(function (value) { return value !== ''; })
+            .join(', ');
+    }
+
     function readValue(wrap, type) {
         if (!wrap) { return type === 'checkbox' ? [] : ''; }
         if (type === 'checkbox') {
@@ -38,6 +52,9 @@
         }
         if (type === 'product_list') {
             return Array.prototype.map.call(wrap.querySelectorAll('.ak-product-check:checked'), function (i) { return i.value; });
+        }
+        if (type === 'address') {
+            return addressValue(wrap);
         }
         var el = wrap.querySelector('input, select, textarea');
         return el ? el.value : '';
@@ -344,7 +361,11 @@
                 }
                 // visible again
                 el.disabled = false;
-                el.required = flags.required && !automated && el.type !== 'hidden' && c.type !== 'product_list';
+                el.required = flags.required
+                    && !automated
+                    && el.type !== 'hidden'
+                    && c.type !== 'product_list'
+                    && !(c.type === 'address' && el.name.indexOf('[street_address_2]') !== -1);
                 if (flags.disabled || automated) {
                     el.readOnly = (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA');
                     if (el.tagName === 'SELECT') { el.disabled = true; }

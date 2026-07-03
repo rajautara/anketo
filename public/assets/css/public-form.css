@@ -39,6 +39,29 @@
 /* Conditionally-hidden fields */
 .ak-field[hidden] { display: none !important; }
 
+/* Address field */
+.ak-address-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.05rem 1.5rem;
+}
+.ak-address-full {
+    grid-column: 1 / -1;
+}
+.ak-address-grid .form-text {
+    display: block;
+    margin-top: .45rem;
+    color: var(--ak-text);
+    font-size: .86rem;
+}
+
+@media (max-width: 575.98px) {
+    .ak-address-grid {
+        grid-template-columns: 1fr;
+        gap: .9rem;
+    }
+}
+
 /* Page breaks */
 .ak-page-step {
     padding-bottom: .85rem;

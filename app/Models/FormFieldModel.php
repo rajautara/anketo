@@ -38,12 +38,12 @@ class FormFieldModel extends Model
     ];
 
     protected $validationRules = [
-        'field_type' => 'required|in_list[text,email,number,textarea,checkbox,radio,select,date,file,paragraph,page_break,appointment,product_list,review_before_submit]',
+        'field_type' => 'required|in_list[text,email,number,textarea,checkbox,radio,select,date,file,paragraph,page_break,appointment,product_list,review_before_submit,address]',
         'label'      => 'required|max_length[255]',
         'field_key'  => 'required|max_length[100]',
     ];
 
-    public const FIELD_TYPES = ['text', 'email', 'number', 'textarea', 'checkbox', 'radio', 'select', 'date', 'file', 'paragraph', 'page_break', 'appointment', 'product_list', 'review_before_submit'];
+    public const FIELD_TYPES = ['text', 'email', 'number', 'textarea', 'checkbox', 'radio', 'select', 'date', 'file', 'paragraph', 'page_break', 'appointment', 'product_list', 'review_before_submit', 'address'];
 
     /** Field types that use an `options` list of {value,label} choices. */
     public const OPTION_FIELD_TYPES = ['checkbox', 'radio', 'select'];
@@ -130,6 +130,7 @@ class FormFieldModel extends Model
             'appointment' => 'Appointment',
             'product_list' => 'Product List',
             'review_before_submit' => 'Review Before Submit',
+            'address' => 'Address',
         ];
 
         return $labels[$fieldType] ?? 'Untitled Field';

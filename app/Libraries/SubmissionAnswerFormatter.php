@@ -22,6 +22,13 @@ class SubmissionAnswerFormatter
             return $productAnswer;
         }
 
+        if (is_string($value)) {
+            $addressAnswer = AddressField::formatJson($value);
+            if ($addressAnswer !== null) {
+                return $addressAnswer;
+            }
+        }
+
         if ($value === null || $value === '') {
             return '';
         }
@@ -62,6 +69,10 @@ class SubmissionAnswerFormatter
             $labels = $this->mapOptionLabels($field, $submitted);
 
             return $labels !== [] ? json_encode($labels) : null;
+        }
+
+        if ($type === 'address') {
+            return AddressField::storedValue(AddressField::sanitize($submitted));
         }
 
         $value = trim((string) $submitted);

@@ -134,7 +134,8 @@
         page_break:  { icon: 'bi-layout-split',     label: 'Page Break' },
         appointment: { icon: 'bi-calendar-check',  label: 'Appointment' },
         product_list: { icon: 'bi-bag',            label: 'Product List' },
-        review_before_submit: { icon: 'bi-card-checklist', label: 'Review Before Submit' }
+        review_before_submit: { icon: 'bi-card-checklist', label: 'Review Before Submit' },
+        address: { icon: 'bi-geo-alt',             label: 'Address' }
     };
     var OPTION_TYPES = ['checkbox', 'radio', 'select'];
     var STATIC_DISPLAY_TYPES = ['page_break', 'review_before_submit'];
@@ -322,6 +323,7 @@
         var isText = type === 'text';
         var isAppointment = type === 'appointment';
         var isProductList = type === 'product_list';
+        var isAddress = type === 'address';
         var options = Array.isArray(field.options) ? field.options : [];
         var textCfg = (isText && field.options && !Array.isArray(field.options)) ? field.options : {};
         var reviewCfg = (isReview && field.options && !Array.isArray(field.options)) ? field.options : {};
@@ -348,7 +350,7 @@
             html += '<div class="mb-2"><label class="form-label small">Field key</label>' +
                 '<input type="text" class="form-control form-control-sm" name="field_key" value="' + escapeHtml(field.field_key) + '"></div>';
 
-            if (!isOptionType && !isAppointment && !isProductList) {
+            if (!isOptionType && !isAppointment && !isProductList && !isAddress) {
                 html += '<div class="mb-2"><label class="form-label small">Placeholder</label>' +
                     '<input type="text" class="form-control form-control-sm" name="placeholder" value="' + escapeHtml(field.placeholder) + '"></div>';
             }

@@ -42,4 +42,19 @@ final class FormFieldModelTest extends CIUnitTestCase
     {
         $this->assertContains('text', FormFieldModel::CONFIG_FIELD_TYPES);
     }
+
+    public function testAddressIsSupportedAsInputField(): void
+    {
+        $this->assertContains('address', FormFieldModel::FIELD_TYPES);
+        $this->assertNotContains('address', FormFieldModel::DISPLAY_ONLY_TYPES);
+        $this->assertNotContains('address', FormFieldModel::OPTION_FIELD_TYPES);
+        $this->assertNotContains('address', FormFieldModel::CONFIG_FIELD_TYPES);
+    }
+
+    public function testAddressDefaultLabel(): void
+    {
+        $model = new FormFieldModel();
+
+        $this->assertSame('Address', $model->defaultLabelFor('address'));
+    }
 }
