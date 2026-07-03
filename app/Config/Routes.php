@@ -43,6 +43,7 @@ $routes->group('', ['filter' => 'session'], static function ($routes) {
 
     $routes->get('forms/(:num)/submissions', 'SubmissionController::index/$1');
     $routes->get('forms/(:num)/submissions/export', 'SubmissionController::export/$1');
+    $routes->post('forms/(:num)/submissions/reset', 'SubmissionController::reset/$1');
     $routes->get('forms/(:num)/submissions/(:num)', 'SubmissionController::show/$1/$2');
     $routes->get('forms/(:num)/submissions/(:num)/files/(:num)', 'SubmissionController::downloadFile/$1/$2/$3');
 });

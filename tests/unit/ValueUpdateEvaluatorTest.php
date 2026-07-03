@@ -88,6 +88,21 @@ final class ValueUpdateEvaluatorTest extends CIUnitTestCase
         $this->assertNull($this->e->evaluate($updates, ['country' => 'US']));
     }
 
+    public function testCheckboxEqualsMatchesWhenOtherOptionsAreAlsoSelected(): void
+    {
+        $updates = [[
+            'match'   => 'all',
+            'when'    => [$this->when('makan', 'equals', 'breakfast')],
+            'action'  => 'calculate',
+            'formula' => '{num_of_attendees} * 5',
+        ]];
+
+        $this->assertSame('25', $this->e->evaluate($updates, [
+            'makan'            => ['breakfast', 'not_required'],
+            'num_of_attendees' => '5',
+        ]));
+    }
+
     public function testFirstMatchingRuleWins(): void
     {
         $updates = [

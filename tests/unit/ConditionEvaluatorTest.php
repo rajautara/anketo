@@ -63,7 +63,10 @@ final class ConditionEvaluatorTest extends CIUnitTestCase
             'array empty'                => ['empty', [], 'x', true],
             'array not_empty'            => ['not_empty', ['a'], 'x', true],
             'array equals single'        => ['equals', ['a'], 'a', true],
-            'array equals multi is false' => ['equals', ['a', 'b'], 'a', false],
+            'array equals multi hit'     => ['equals', ['a', 'b'], 'a', true],
+            'array equals multi miss'    => ['equals', ['a', 'b'], 'c', false],
+            'array not_equals multi hit' => ['not_equals', ['a', 'b'], 'c', true],
+            'array not_equals multi miss' => ['not_equals', ['a', 'b'], 'a', false],
             'array gt is false'          => ['gt', ['1'], '0', false],
             'unknown operator'           => ['whatever', 'a', 'a', false],
         ];

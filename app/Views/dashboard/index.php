@@ -42,6 +42,12 @@
                 </thead>
                 <tbody>
                     <?php foreach ($forms as $form) : ?>
+                        <?php
+                            $submissionCount = (int) $form['submission_count'];
+                            $resetConfirm = 'Reset ' . $submissionCount . ' '
+                                . ($submissionCount === 1 ? 'submission' : 'submissions')
+                                . ' for "' . $form['title'] . '"? This permanently deletes all responses and uploaded submission files for this form.';
+                        ?>
                         <tr>
                             <td>
                                 <a href="<?= site_url('forms/' . $form['id'] . '/builder') ?>" class="fw-semibold text-decoration-none d-inline-block text-truncate" style="max-width: 22rem;" title="<?= esc($form['title']) ?>">
@@ -71,6 +77,13 @@
                                     <a href="<?= site_url('forms/' . $form['id'] . '/edit') ?>" class="btn btn-sm btn-outline-secondary" title="Settings">
                                         <i class="bi bi-gear"></i>
                                     </a>
+                                    <form action="<?= site_url('forms/' . $form['id'] . '/submissions/reset') ?>" method="post" class="d-inline" onsubmit="return confirm(<?= esc(json_encode($resetConfirm), 'attr') ?>);">
+                                        <?= csrf_field() ?>
+                                        <input type="hidden" name="return_to" value="dashboard">
+                                        <button type="submit" class="btn btn-sm btn-outline-warning" title="Reset submissions" <?= $submissionCount > 0 ? '' : 'disabled' ?>>
+                                            <i class="bi bi-arrow-counterclockwise"></i>
+                                        </button>
+                                    </form>
                                     <form action="<?= site_url('forms/' . $form['id'] . '/delete') ?>" method="post" class="d-inline" onsubmit="return confirm('Delete this form and all its submissions?');">
                                         <?= csrf_field() ?>
                                         <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete">

@@ -135,11 +135,11 @@ class ConditionEvaluator
 
             case 'equals':
                 return $isList
-                    ? (count($answer) === 1 && (string) reset($answer) === $value)
+                    ? in_array($value, array_map('strval', $answer), true)
                     : ($scalar === $value);
             case 'not_equals':
                 return $isList
-                    ? ! (count($answer) === 1 && (string) reset($answer) === $value)
+                    ? ! in_array($value, array_map('strval', $answer), true)
                     : ($scalar !== $value);
 
             case 'contains':

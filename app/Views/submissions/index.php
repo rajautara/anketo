@@ -8,11 +8,29 @@
     <div>
         <a href="<?= site_url('forms/' . $form['id'] . '/builder') ?>" class="ak-back-link"><i class="bi bi-arrow-left"></i> Back to builder</a>
         <h1 class="h4 mb-0">Submissions</h1>
-        <div class="ak-page-title-sub"><?= esc($form['title']) ?></div>
+        <div class="ak-page-title-sub">
+            <?= esc($form['title']) ?> &middot; <?= (int) $submissionCount ?> <?= (int) $submissionCount === 1 ? 'response' : 'responses' ?>
+        </div>
     </div>
-    <a href="<?= site_url('forms/' . $form['id'] . '/submissions/export') ?>" class="btn btn-outline-primary">
-        <i class="bi bi-download me-1"></i> Export CSV
-    </a>
+    <div class="d-flex gap-2 align-items-center">
+        <?php if ((int) $submissionCount > 0) : ?>
+            <?php
+                $resetConfirm = 'Reset ' . (int) $submissionCount . ' '
+                    . ((int) $submissionCount === 1 ? 'submission' : 'submissions')
+                    . ' for "' . $form['title'] . '"? This permanently deletes all responses and uploaded submission files for this form.';
+            ?>
+            <form action="<?= site_url('forms/' . $form['id'] . '/submissions/reset') ?>" method="post" class="d-inline" onsubmit="return confirm(<?= esc(json_encode($resetConfirm), 'attr') ?>);">
+                <?= csrf_field() ?>
+                <input type="hidden" name="return_to" value="submissions">
+                <button type="submit" class="btn btn-outline-warning">
+                    <i class="bi bi-arrow-counterclockwise me-1"></i> Reset submissions
+                </button>
+            </form>
+        <?php endif ?>
+        <a href="<?= site_url('forms/' . $form['id'] . '/submissions/export') ?>" class="btn btn-outline-primary">
+            <i class="bi bi-download me-1"></i> Export CSV
+        </a>
+    </div>
 </div>
 
 <?= $this->include('partials/flash') ?>

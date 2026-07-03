@@ -3,6 +3,7 @@
 namespace App\Controllers;
 
 use App\Libraries\SubmissionAnswerFormatter;
+use App\Libraries\SubmissionResetter;
 use App\Models\FormFieldModel;
 use App\Models\FormModel;
 use App\Models\FormSubmissionModel;
@@ -30,6 +31,7 @@ class SubmissionController extends BaseController
     public function index(int $formId): string
     {
         $form = $this->findFormOrFail($formId);
+        $submissionCount = $this->submissionModel->countForForm($form['id']);
 
         // Columns = the form's input fields (display-only types store no value).
         $formFields = $this->fieldModel->getForForm($form['id']);
@@ -58,6 +60,7 @@ class SubmissionController extends BaseController
             'form'        => $form,
             'columns'     => $columns,
             'submissions' => $submissions,
+            'submissionCount' => $submissionCount,
             'answersById' => $answersById,
             'fieldsByKey' => $fieldsByKey,
             'answerFormatter' => $this->answerFormatter,
@@ -131,6 +134,37 @@ class SubmissionController extends BaseController
             ->setHeader('Content-Type', 'text/csv; charset=utf-8')
             ->setHeader('Content-Disposition', 'attachment; filename="' . $filename . '"')
             ->setBody($csv);
+    }
+
+    public function reset(int $formId)
+    {
+        $form = $this->findFormOrFail($formId);
+
+        $result = (new SubmissionResetter())->resetForm($form['id']);
+        $returnTo = $this->request->getPost('return_to') === 'dashboard'
+            ? '/dashboard'
+            : '/forms/' . $form['id'] . '/submissions';
+
+        if ($result['submissions'] === 0) {
+            return redirect()->to($returnTo)->with('message', 'No submissions to reset.');
+        }
+
+        $message = 'Reset ' . $result['submissions'] . ' '
+            . ($result['submissions'] === 1 ? 'submission' : 'submissions')
+            . ' for "' . $form['title'] . '".';
+
+        $redirect = redirect()->to($returnTo)->with('message', $message);
+
+        if ($result['file_failures'] > 0) {
+            $redirect->with(
+                'error',
+                $result['file_failures'] . ' uploaded '
+                    . ($result['file_failures'] === 1 ? 'file could' : 'files could')
+                    . ' not be deleted. Check the logs for details.'
+            );
+        }
+
+        return $redirect;
     }
 
     public function downloadFile(int $formId, int $submissionId, int $dataId)

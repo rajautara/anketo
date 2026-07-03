@@ -417,6 +417,17 @@ class PublicFormController extends BaseController
             }
 
             $value = $answers[$key];
+
+            if (($field['field_type'] ?? '') === 'product_list') {
+                $total = ProductList::selectionTotal($field, $value);
+                if ($total !== null) {
+                    $out[$key] = (string) $total;
+                    $out[(string) ($field['label'] ?? '')] = (string) $total;
+                }
+
+                continue;
+            }
+
             if (! in_array($field['field_type'] ?? '', ['radio', 'select'], true)) {
                 $out[(string) ($field['label'] ?? '')] = $value;
                 continue;

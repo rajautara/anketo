@@ -108,6 +108,21 @@ class ProductList
         return [json_encode(['items' => $items, 'total' => self::money($total)], JSON_UNESCAPED_SLASHES), null];
     }
 
+    public static function selectionTotal(array $field, $submitted): ?float
+    {
+        [$value, $error] = self::selectionValue($field, $submitted);
+        if ($error !== null || $value === null) {
+            return null;
+        }
+
+        $decoded = json_decode($value, true);
+        if (! is_array($decoded) || ! array_key_exists('total', $decoded)) {
+            return null;
+        }
+
+        return self::money((float) $decoded['total']);
+    }
+
     public static function decrementStock(array $config, string $selectionJson): array
     {
         $selection = json_decode($selectionJson, true);
@@ -118,13 +133,36 @@ class ProductList
         $qtyById = [];
         foreach ($selection['items'] as $item) {
             if (is_array($item) && isset($item['id'])) {
-                $qtyById[(string) $item['id']] = (int) ($qtyById[(string) $item['id']] ?? 0) + (int) ($item['quantity'] ?? 0);
+                $qtyById[(string) $item['id']] = (int) ($qtyById[(string) $item['id']] ?? 0) + max(0, (int) ($item['quantity'] ?? 0));
             }
         }
 
         $config = self::sanitizeConfig($config);
         foreach ($config['products'] as &$product) {
             $product['stock'] = max(0, (int) $product['stock'] - (int) ($qtyById[$product['id']] ?? 0));
+        }
+        unset($product);
+
+        return $config;
+    }
+
+    public static function incrementStock(array $config, string $selectionJson): array
+    {
+        $selection = json_decode($selectionJson, true);
+        if (! is_array($selection) || ! is_array($selection['items'] ?? null)) {
+            return self::sanitizeConfig($config);
+        }
+
+        $qtyById = [];
+        foreach ($selection['items'] as $item) {
+            if (is_array($item) && isset($item['id'])) {
+                $qtyById[(string) $item['id']] = (int) ($qtyById[(string) $item['id']] ?? 0) + max(0, (int) ($item['quantity'] ?? 0));
+            }
+        }
+
+        $config = self::sanitizeConfig($config);
+        foreach ($config['products'] as &$product) {
+            $product['stock'] = self::clampInt((int) $product['stock'] + (int) ($qtyById[$product['id']] ?? 0), 0, 999999);
         }
         unset($product);
 

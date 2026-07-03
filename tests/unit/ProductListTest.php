@@ -53,6 +53,16 @@ final class ProductListTest extends CIUnitTestCase
         $this->assertEqualsWithDelta(20.0, (float) $decoded['total'], 0.001);
     }
 
+    public function testSelectionTotalReturnsNumericTotal(): void
+    {
+        $total = ProductList::selectionTotal($this->field, [
+            'selected' => ['product_a'],
+            'qty'      => ['product_a' => '3'],
+        ]);
+
+        $this->assertSame(30.0, $total);
+    }
+
     public function testSelectionRejectsQuantityAboveStock(): void
     {
         [, $error] = ProductList::selectionValue($this->field, [
@@ -83,6 +93,19 @@ final class ProductListTest extends CIUnitTestCase
         $config = ProductList::decrementStock($this->field['options'], (string) $value);
 
         $this->assertSame(1, $config['products'][0]['stock']);
+    }
+
+    public function testIncrementStock(): void
+    {
+        [$value] = ProductList::selectionValue($this->field, [
+            'selected' => ['product_a'],
+            'qty'      => ['product_a' => '2'],
+        ]);
+
+        $decremented = ProductList::decrementStock($this->field['options'], (string) $value);
+        $restored = ProductList::incrementStock($decremented, (string) $value);
+
+        $this->assertSame(3, $restored['products'][0]['stock']);
     }
 
     public function testFormatAnswerOnlyHandlesProductObject(): void

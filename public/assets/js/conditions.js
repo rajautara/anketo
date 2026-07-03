@@ -51,11 +51,37 @@
         return answers;
     }
 
+    function productListTotal(wrap) {
+        if (!wrap) { return null; }
+
+        var total = 0;
+        Array.prototype.forEach.call(wrap.querySelectorAll('.ak-product-item'), function (item) {
+            var check = item.querySelector('.ak-product-check');
+            var qty = item.querySelector('.ak-product-qty');
+            if (!check || !qty || !check.checked || check.disabled) { return; }
+
+            var n = parseInt(qty.value || '1', 10) || 1;
+            total += (parseFloat(item.getAttribute('data-price') || '0') || 0) * n;
+        });
+
+        return Math.round(total * 100) / 100;
+    }
+
     function formulaAnswers(rawAnswers) {
         var out = Object.assign({}, rawAnswers);
 
         configs.forEach(function (c) {
             var value = rawAnswers[c.key];
+
+            if (c.type === 'product_list') {
+                var total = productListTotal(wrapperFor(c.key));
+                if (total !== null) {
+                    out[c.key] = String(total);
+                    if (c.label) { out[c.label] = String(total); }
+                }
+                return;
+            }
+
             if (Array.isArray(value) || value == null) { return; }
 
             if (['radio', 'select'].indexOf(c.type) === -1) {
@@ -87,9 +113,9 @@
             case 'empty': return isEmpty;
             case 'not_empty': return !isEmpty;
             case 'equals':
-                return isList ? (answer.length === 1 && String(answer[0]) === value) : (scalar === value);
+                return isList ? answer.map(String).indexOf(value) !== -1 : (scalar === value);
             case 'not_equals':
-                return isList ? !(answer.length === 1 && String(answer[0]) === value) : (scalar !== value);
+                return isList ? answer.map(String).indexOf(value) === -1 : (scalar !== value);
             case 'contains':
                 return isList ? answer.map(String).indexOf(value) !== -1 : (value !== '' && scalar.indexOf(value) !== -1);
             case 'not_contains':

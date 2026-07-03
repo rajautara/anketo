@@ -57,7 +57,7 @@
 
     function usableSourceFields(fields) {
         return fields.filter(function (f) {
-            return ['paragraph', 'page_break', 'file', 'product_list'].indexOf(f.type) === -1;
+            return ['paragraph', 'page_break', 'file'].indexOf(f.type) === -1;
         });
     }
 
