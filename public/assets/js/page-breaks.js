@@ -16,6 +16,7 @@
     form.noValidate = true;
 
     function setPage(index) {
+        var previous = current;
         current = Math.max(0, Math.min(index, pages.length - 1));
 
         pages.forEach(function (page, i) {
@@ -30,6 +31,10 @@
         }
         if (submitBtn) {
             submitBtn.classList.toggle('d-none', current !== pages.length - 1);
+        }
+
+        if (current !== previous) {
+            window.scrollTo(0, 0);
         }
     }
 
