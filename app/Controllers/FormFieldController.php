@@ -4,6 +4,7 @@ namespace App\Controllers;
 
 use App\Libraries\ConditionEvaluator;
 use App\Libraries\ProductList;
+use App\Libraries\UploadPath;
 use App\Libraries\ValueUpdateEvaluator;
 use App\Models\FormFieldModel;
 use App\Models\FormModel;
@@ -189,7 +190,7 @@ class FormFieldController extends BaseController
             return $this->response->setStatusCode(422)->setJSON(['error' => 'Only JPG, PNG, GIF, or WebP images are allowed.']);
         }
 
-        $directory = WRITEPATH . 'uploads/' . $folder . '/' . $formId;
+        $directory = UploadPath::base() . $folder . '/' . $formId;
         if (! is_dir($directory)) {
             mkdir($directory, 0755, true);
         }

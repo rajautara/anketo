@@ -147,7 +147,7 @@ class SubmissionResetter
     {
         $deleted = 0;
         $failures = 0;
-        $directory = WRITEPATH . 'uploads/forms/' . $formId;
+        $directory = UploadPath::base() . 'forms/' . $formId;
         $realDirectory = realpath($directory);
 
         foreach ($filePaths as $filePath) {
@@ -160,7 +160,7 @@ class SubmissionResetter
                 continue;
             }
 
-            $absolute = WRITEPATH . 'uploads/' . $relative;
+            $absolute = UploadPath::base() . $relative;
             if (! is_file($absolute)) {
                 continue;
             }

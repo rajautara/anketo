@@ -9,6 +9,7 @@ use App\Libraries\FormulaEvaluator;
 use App\Libraries\ProductList;
 use App\Libraries\SubmissionAnswerFormatter;
 use App\Libraries\SubmissionNotifier;
+use App\Libraries\UploadPath;
 use App\Libraries\ValueUpdateEvaluator;
 use App\Models\FormFieldModel;
 use App\Models\FormModel;
@@ -116,7 +117,7 @@ class PublicFormController extends BaseController
             throw new PageNotFoundException('Image not found.');
         }
 
-        $path = WRITEPATH . 'uploads/' . $folder . '/' . $formId . '/' . $name;
+        $path = UploadPath::base() . $folder . '/' . $formId . '/' . $name;
         if (! is_file($path)) {
             throw new PageNotFoundException('Image not found.');
         }
@@ -551,7 +552,7 @@ class PublicFormController extends BaseController
             return [null, null, $field['label'] . ' must be smaller than 10 MB.'];
         }
 
-        $directory = WRITEPATH . 'uploads/forms/' . $formId;
+        $directory = UploadPath::base() . 'forms/' . $formId;
         if (! is_dir($directory)) {
             mkdir($directory, 0755, true);
         }

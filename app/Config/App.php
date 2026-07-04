@@ -44,6 +44,24 @@ class App extends BaseConfig
 
     /**
      * --------------------------------------------------------------------------
+     * Upload Path
+     * --------------------------------------------------------------------------
+     *
+     * Absolute path where uploaded files (submission file-uploads, paragraph
+     * and product images) are stored. Leave empty to use the default
+     * `writable/uploads/` directory.
+     *
+     * Set this (via .env's app.uploadPath) to an absolute path OUTSIDE the
+     * deployed application folder on hosts where deploying replaces the whole
+     * codebase (e.g. a fresh git clone/checkout or zip re-upload on every
+     * deploy) - otherwise every deploy wipes previously uploaded files while
+     * their database references survive, breaking existing download/image
+     * links. See README.md's Deployment section.
+     */
+    public string $uploadPath = '';
+
+    /**
+     * --------------------------------------------------------------------------
      * URI PROTOCOL
      * --------------------------------------------------------------------------
      *

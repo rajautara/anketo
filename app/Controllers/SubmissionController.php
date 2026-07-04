@@ -4,6 +4,7 @@ namespace App\Controllers;
 
 use App\Libraries\SubmissionAnswerFormatter;
 use App\Libraries\SubmissionResetter;
+use App\Libraries\UploadPath;
 use App\Models\FormFieldModel;
 use App\Models\FormModel;
 use App\Models\FormSubmissionModel;
@@ -174,11 +175,11 @@ class SubmissionController extends BaseController
 
         $answer = $this->submissionDataModel->find($dataId);
 
-        if ($answer === null || (int) $answer['submission_id'] !== $submission['id'] || empty($answer['file_path'])) {
+        if ($answer === null || (int) $answer['submission_id'] !== (int) $submission['id'] || empty($answer['file_path'])) {
             throw new PageNotFoundException('File not found.');
         }
 
-        $path = WRITEPATH . 'uploads/' . $answer['file_path'];
+        $path = UploadPath::base() . $answer['file_path'];
 
         if (! is_file($path)) {
             throw new PageNotFoundException('File not found.');
@@ -188,7 +189,10 @@ class SubmissionController extends BaseController
             ? $answer['value']
             : basename($path);
 
-        return $this->response->download($originalName, file_get_contents($path));
+        // Stream from disk rather than passing contents as $data - CodeIgniter's
+        // download() silently no-ops when $data is an empty string, which a
+        // genuinely 0-byte uploaded file would otherwise hit.
+        return $this->response->download($path, null)->setFileName($originalName);
     }
 
     /**

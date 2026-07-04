@@ -25,6 +25,10 @@
 # app_baseURL = ''
 # app.forceGlobalSecureRequests = false
 # app.CSPEnabled = false
+# Absolute path outside the deployed project folder to store uploaded files -
+# set this if your deploy process replaces the whole codebase on every update
+# (see README.md's Deployment section).
+# app.uploadPath = ''
 
 #--------------------------------------------------------------------
 # DATABASE

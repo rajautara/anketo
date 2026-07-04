@@ -212,6 +212,16 @@ php spark migrate --all
 
 If you used the fallback document-root option in step 3, re-copy `public/`'s contents into `public_html/` after pulling changes that touch `public/assets` or `public/index.php`.
 
+### Keeping uploaded files safe across redeploys
+
+`writable/uploads/` is intentionally git-ignored — user-uploaded files should never live in version control. That's safe as long as you update via `git pull` (or re-uploading only changed files) as shown above, since that never touches files that aren't part of the repo.
+
+If instead your deploy process **replaces the whole project folder** on every update (e.g. cPanel Git's one-click "Deploy HEAD Commit", or re-uploading a fresh zip each time), it wipes everything under `writable/uploads/` along with it — including files submitted through published forms. The database rows referencing those files (`submission_data.file_path`) live in MySQL, untouched by the deploy, so existing download/image links keep showing up but 404 once their file is gone.
+
+Two ways to avoid this:
+- **Preferred:** update via `git pull` in place, as documented above, instead of a fresh clone/re-upload.
+- **If you must keep using a wipe-and-replace deploy:** set `app.uploadPath` in `.env` to an absolute path *outside* the folder that gets replaced (e.g. `~/anketo-uploads`, a sibling directory you create once). The app will read/write all uploaded files there instead of inside `writable/uploads/`, so they survive every redeploy. See the `env` template for the exact setting.
+
 ### Troubleshooting
 
 - **Every route returns 500 right after a fresh deploy, even `/`:** check `~/anketo/writable/logs/*.log` for the real error (production mode hides it from the browser). The most common cause is `writable/cache`, `writable/logs`, `writable/session`, `writable/uploads`, or `writable/debugbar` not existing — CodeIgniter needs to write into these on every request. This repo now tracks them via `.gitkeep`, but if you're deploying from an older checkout or a zip/FTP upload that dropped empty folders, recreate them manually:
