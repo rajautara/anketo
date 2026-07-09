@@ -2,6 +2,7 @@
 
 namespace App\Controllers;
 
+use App\Libraries\FormAccess;
 use CodeIgniter\Controller;
 use CodeIgniter\Exceptions\PageNotFoundException;
 use CodeIgniter\HTTP\RequestInterface;
@@ -43,13 +44,28 @@ abstract class BaseController extends Controller
 
     /**
      * Aborts with a 404 (rather than 403, to avoid revealing that a form
-     * belonging to someone else exists) unless the given form is owned by
-     * the current user or the current user is an admin.
+     * belonging to someone else exists) unless the current user has the
+     * requested owner/collaborator capability.
      */
-    protected function ensureFormAccess(array $form): void
+    protected function ensureFormAccess(array $form, string $capability = FormAccess::FORM_EDIT): array
     {
-        if (! $this->isAdmin() && (int) $form['user_id'] !== $this->currentUserId()) {
+        $access = (new FormAccess())->permissions($form, $this->currentUserId());
+
+        $allowed = match ($capability) {
+            FormAccess::FORM_VIEW => $access['canViewForm'],
+            FormAccess::FORM_EDIT => $access['canEditForm'],
+            FormAccess::FORM_DELETE => $access['canDeleteForm'],
+            FormAccess::FORM_MANAGE_COLLABORATORS => $access['canManageCollaborators'],
+            FormAccess::SUBMISSION_VIEW => $access['canViewSubmissions'],
+            FormAccess::SUBMISSION_EXPORT => $access['canExportSubmissions'],
+            FormAccess::SUBMISSION_RESET => $access['canResetSubmissions'],
+            default => false,
+        };
+
+        if (! $allowed) {
             throw new PageNotFoundException('Form not found.');
         }
+
+        return $access;
     }
 }

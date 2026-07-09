@@ -40,7 +40,7 @@ class FormModel extends Model
     ];
 
     /**
-     * Forms visible to the given user: their own forms, or every form if $isAdmin.
+     * Forms owned by the given user. Admins do not receive a cross-user bypass.
      */
     public function getForUser(int $userId, bool $isAdmin = false): array
     {
@@ -48,11 +48,29 @@ class FormModel extends Model
             'forms.*, (SELECT COUNT(*) FROM form_submissions WHERE form_submissions.form_id = forms.id) AS submission_count'
         );
 
-        if (! $isAdmin) {
-            $builder->where('forms.user_id', $userId);
-        }
+        $builder->where('forms.user_id', $userId);
 
         return $builder->orderBy('forms.created_at', 'DESC')->findAll();
+    }
+
+    /**
+     * Forms explicitly shared with the given user as a collaborator.
+     */
+    public function getSharedForUser(int $userId): array
+    {
+        return $this->select(
+            'forms.*, form_collaborators.form_access, form_collaborators.submission_access, '
+            . '(SELECT COUNT(*) FROM form_submissions WHERE form_submissions.form_id = forms.id) AS submission_count'
+        )
+            ->join('form_collaborators', 'form_collaborators.form_id = forms.id')
+            ->where('form_collaborators.user_id', $userId)
+            ->where('forms.user_id !=', $userId)
+            ->groupStart()
+                ->where('form_collaborators.form_access !=', 'none')
+                ->orWhere('form_collaborators.submission_access !=', 'none')
+            ->groupEnd()
+            ->orderBy('forms.created_at', 'DESC')
+            ->findAll();
     }
 
     /**
@@ -85,10 +103,10 @@ class FormModel extends Model
     }
 
     /**
-     * Whether $userId may view/manage a form owned by $ownerId.
+     * Whether $userId owns a form owned by $ownerId.
      */
     public function userCanAccess(int $ownerId, int $userId, bool $isAdmin): bool
     {
-        return $isAdmin || $ownerId === $userId;
+        return $ownerId === $userId;
     }
 }

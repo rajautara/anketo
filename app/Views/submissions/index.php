@@ -6,14 +6,18 @@
 
 <div class="ak-page-header">
     <div>
-        <a href="<?= site_url('forms/' . $form['id'] . '/builder') ?>" class="ak-back-link"><i class="bi bi-arrow-left"></i> Back to builder</a>
+        <?php if ($access['canViewForm']) : ?>
+            <a href="<?= site_url('forms/' . $form['id'] . '/builder') ?>" class="ak-back-link"><i class="bi bi-arrow-left"></i> Back to builder</a>
+        <?php else : ?>
+            <a href="<?= site_url('dashboard') ?>" class="ak-back-link"><i class="bi bi-arrow-left"></i> Dashboard</a>
+        <?php endif ?>
         <h1 class="h4 mb-0">Submissions</h1>
         <div class="ak-page-title-sub">
             <?= esc($form['title']) ?> &middot; <?= (int) $submissionCount ?> <?= (int) $submissionCount === 1 ? 'response' : 'responses' ?>
         </div>
     </div>
     <div class="d-flex gap-2 align-items-center">
-        <?php if ((int) $submissionCount > 0) : ?>
+        <?php if ($access['canResetSubmissions'] && (int) $submissionCount > 0) : ?>
             <?php
                 $resetConfirm = 'Reset ' . (int) $submissionCount . ' '
                     . ((int) $submissionCount === 1 ? 'submission' : 'submissions')
@@ -27,9 +31,11 @@
                 </button>
             </form>
         <?php endif ?>
-        <a href="<?= site_url('forms/' . $form['id'] . '/submissions/export') ?>" class="btn btn-outline-primary">
-            <i class="bi bi-download me-1"></i> Export CSV
-        </a>
+        <?php if ($access['canExportSubmissions']) : ?>
+            <a href="<?= site_url('forms/' . $form['id'] . '/submissions/export') ?>" class="btn btn-outline-primary">
+                <i class="bi bi-download me-1"></i> Export CSV
+            </a>
+        <?php endif ?>
     </div>
 </div>
 

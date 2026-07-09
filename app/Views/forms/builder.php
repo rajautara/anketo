@@ -24,18 +24,24 @@
         </div>
     </div>
     <div class="d-flex flex-wrap gap-2 align-items-center">
-        <a href="<?= site_url('forms/' . $form['id'] . '/edit') ?>" class="btn btn-outline-secondary btn-sm"><i class="bi bi-gear me-1"></i> Settings</a>
-        <a href="<?= site_url('forms/' . $form['id'] . '/submissions') ?>" class="btn btn-outline-secondary btn-sm"><i class="bi bi-inbox me-1"></i> Submissions</a>
-        <?php if ($form['status'] === 'published') : ?>
-            <form action="<?= site_url('forms/' . $form['id'] . '/unpublish') ?>" method="post" class="d-inline">
-                <?= csrf_field() ?>
-                <button type="submit" class="btn btn-outline-warning btn-sm">Unpublish</button>
-            </form>
-        <?php else : ?>
-            <form action="<?= site_url('forms/' . $form['id'] . '/publish') ?>" method="post" class="d-inline">
-                <?= csrf_field() ?>
-                <button type="submit" class="btn btn-success btn-sm"><i class="bi bi-globe me-1"></i> Publish</button>
-            </form>
+        <?php if ($access['canEditForm']) : ?>
+            <a href="<?= site_url('forms/' . $form['id'] . '/edit') ?>" class="btn btn-outline-secondary btn-sm"><i class="bi bi-gear me-1"></i> Settings</a>
+        <?php endif ?>
+        <?php if ($access['canViewSubmissions']) : ?>
+            <a href="<?= site_url('forms/' . $form['id'] . '/submissions') ?>" class="btn btn-outline-secondary btn-sm"><i class="bi bi-inbox me-1"></i> Submissions</a>
+        <?php endif ?>
+        <?php if ($access['canEditForm']) : ?>
+            <?php if ($form['status'] === 'published') : ?>
+                <form action="<?= site_url('forms/' . $form['id'] . '/unpublish') ?>" method="post" class="d-inline">
+                    <?= csrf_field() ?>
+                    <button type="submit" class="btn btn-outline-warning btn-sm">Unpublish</button>
+                </form>
+            <?php else : ?>
+                <form action="<?= site_url('forms/' . $form['id'] . '/publish') ?>" method="post" class="d-inline">
+                    <?= csrf_field() ?>
+                    <button type="submit" class="btn btn-success btn-sm"><i class="bi bi-globe me-1"></i> Publish</button>
+                </form>
+            <?php endif ?>
         <?php endif ?>
     </div>
 </div>
@@ -52,27 +58,29 @@
 
 <div class="row g-3">
     <!-- Palette -->
-    <div class="col-12 col-lg-3 ak-builder-col">
-        <div class="card ak-builder-palette-card">
-            <div class="card-header">Add a field</div>
-            <div class="card-body">
-                <div id="field-palette">
-                    <?php foreach ($fieldTypes as $type) : ?>
-                        <div class="field-palette-item" data-field-type="<?= esc($type) ?>">
-                            <i class="bi <?= esc(field_type_icon($type)) ?>"></i>
-                            <span><?= esc(field_type_label($type)) ?></span>
-                        </div>
-                    <?php endforeach ?>
+    <?php if ($access['canEditForm']) : ?>
+        <div class="col-12 col-lg-3 ak-builder-col">
+            <div class="card ak-builder-palette-card">
+                <div class="card-header">Add a field</div>
+                <div class="card-body">
+                    <div id="field-palette">
+                        <?php foreach ($fieldTypes as $type) : ?>
+                            <div class="field-palette-item" data-field-type="<?= esc($type) ?>">
+                                <i class="bi <?= esc(field_type_icon($type)) ?>"></i>
+                                <span><?= esc(field_type_label($type)) ?></span>
+                            </div>
+                        <?php endforeach ?>
+                    </div>
+                    <p class="text-muted small mt-3 mb-0"><i class="bi bi-hand-index-thumb me-1"></i> Drag a field onto the form.</p>
                 </div>
-                <p class="text-muted small mt-3 mb-0"><i class="bi bi-hand-index-thumb me-1"></i> Drag a field onto the form.</p>
             </div>
         </div>
-    </div>
+    <?php endif ?>
 
     <!-- Canvas -->
-    <div class="col-12 col-lg-9 ak-builder-col">
+    <div class="col-12 <?= $access['canEditForm'] ? 'col-lg-9' : 'col-lg-8 mx-auto' ?> ak-builder-col">
         <div class="card">
-            <div class="card-header">Form fields</div>
+            <div class="card-header"><?= $access['canEditForm'] ? 'Form fields' : 'Form fields (read-only)' ?></div>
             <div class="card-body">
                 <ul id="field-canvas" class="list-unstyled d-flex flex-column gap-2 mb-0"></ul>
                 <p id="empty-canvas-hint" class="ak-canvas-hint text-center py-5 mb-0">
@@ -119,6 +127,7 @@
     var PRODUCT_IMAGE_BASE = '<?= site_url('product-image/' . $form['id']) ?>';
     var CSRF_TOKEN = document.querySelector('meta[name="csrf-token"]').content;
     var INITIAL_FIELDS = <?= json_encode($fields) ?>;
+    var CAN_EDIT_FORM = <?= $access['canEditForm'] ? 'true' : 'false' ?>;
 
     var FIELD_META = {
         text:     { icon: 'bi-input-cursor-text', label: 'Text' },
@@ -224,29 +233,31 @@
         label.className = 'field-row-label flex-grow-1 text-truncate';
         label.textContent = field.label + (field.is_required ? ' *' : '');
 
-        var edit = document.createElement('button');
-        edit.type = 'button';
-        edit.className = 'btn btn-sm btn-outline-secondary';
-        edit.innerHTML = '<i class="bi bi-pencil"></i>';
-        edit.addEventListener('click', function () {
-            // Resolve from the registry at click time: saves replace the object
-            // in FIELDS, and the closure's `field` would go stale.
-            openFieldModal(FIELDS[field.id] || field, li);
-        });
-
-        var del = document.createElement('button');
-        del.type = 'button';
-        del.className = 'btn btn-sm btn-outline-danger';
-        del.innerHTML = '<i class="bi bi-trash"></i>';
-        del.addEventListener('click', function () {
-            deleteField(field.id, li);
-        });
-
         top.appendChild(handle);
         top.appendChild(icon);
         top.appendChild(label);
-        top.appendChild(edit);
-        top.appendChild(del);
+        if (CAN_EDIT_FORM) {
+            var edit = document.createElement('button');
+            edit.type = 'button';
+            edit.className = 'btn btn-sm btn-outline-secondary';
+            edit.innerHTML = '<i class="bi bi-pencil"></i>';
+            edit.addEventListener('click', function () {
+                // Resolve from the registry at click time: saves replace the object
+                // in FIELDS, and the closure's `field` would go stale.
+                openFieldModal(FIELDS[field.id] || field, li);
+            });
+
+            var del = document.createElement('button');
+            del.type = 'button';
+            del.className = 'btn btn-sm btn-outline-danger';
+            del.innerHTML = '<i class="bi bi-trash"></i>';
+            del.addEventListener('click', function () {
+                deleteField(field.id, li);
+            });
+
+            top.appendChild(edit);
+            top.appendChild(del);
+        }
         li.appendChild(top);
 
         return li;
@@ -987,46 +998,48 @@
         }).catch(function (err) { alert(err.message); });
     }
 
-    // Palette -> clone-only source
-    Sortable.create(document.getElementById('field-palette'), {
-        group: { name: 'builder', pull: 'clone', put: false },
-        sort: false,
-        scroll: true,
-        bubbleScroll: true,
-        scrollSensitivity: 80,
-        scrollSpeed: 12,
-        animation: 150
-    });
+    if (CAN_EDIT_FORM) {
+        // Palette -> clone-only source
+        Sortable.create(document.getElementById('field-palette'), {
+            group: { name: 'builder', pull: 'clone', put: false },
+            sort: false,
+            scroll: true,
+            bubbleScroll: true,
+            scrollSensitivity: 80,
+            scrollSpeed: 12,
+            animation: 150
+        });
 
-    // Canvas -> sortable target
-    Sortable.create(canvas, {
-        group: { name: 'builder', pull: false, put: true },
-        animation: 150,
-        handle: '.drag-handle',
-        scroll: true,
-        bubbleScroll: true,
-        scrollSensitivity: 80,
-        scrollSpeed: 12,
-        onAdd: function (evt) {
-            var fieldType = evt.item.dataset.fieldType;
-            var index = evt.newIndex;
-            evt.item.remove();
+        // Canvas -> sortable target
+        Sortable.create(canvas, {
+            group: { name: 'builder', pull: false, put: true },
+            animation: 150,
+            handle: '.drag-handle',
+            scroll: true,
+            bubbleScroll: true,
+            scrollSensitivity: 80,
+            scrollSpeed: 12,
+            onAdd: function (evt) {
+                var fieldType = evt.item.dataset.fieldType;
+                var index = evt.newIndex;
+                evt.item.remove();
 
-            apiFetch(API_BASE + '/fields', {
-                method: 'POST',
-                body: JSON.stringify({ field_type: fieldType })
-            }).then(function (field) {
-                registerField(field);
-                var row = buildRow(field);
-                var ref = canvas.children[index] || null;
-                canvas.insertBefore(row, ref);
-                updateEmptyHint();
-                syncOrder();
-                openFieldModal(field, row);
-            }).catch(function (err) { alert(err.message); });
-        },
-        onUpdate: function () { syncOrder(); }
-    });
+                apiFetch(API_BASE + '/fields', {
+                    method: 'POST',
+                    body: JSON.stringify({ field_type: fieldType })
+                }).then(function (field) {
+                    registerField(field);
+                    var row = buildRow(field);
+                    var ref = canvas.children[index] || null;
+                    canvas.insertBefore(row, ref);
+                    updateEmptyHint();
+                    syncOrder();
+                    openFieldModal(field, row);
+                }).catch(function (err) { alert(err.message); });
+            },
+            onUpdate: function () { syncOrder(); }
+        });
+    }
 
     var copyBtn = document.getElementById('copy-public-url');
     if (copyBtn) {

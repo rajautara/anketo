@@ -69,6 +69,96 @@
                 <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i> Save changes</button>
             </div>
         </form>
+
+        <?php if ($access['canManageCollaborators']) : ?>
+            <div class="card mt-4 mb-4">
+                <div class="card-header">Collaborators</div>
+                <div class="card-body p-4">
+                    <?php if (empty($availableUsers)) : ?>
+                        <p class="text-muted mb-0">No other users are available to assign.</p>
+                    <?php else : ?>
+                        <div class="row g-3 align-items-end">
+                            <div class="col-md-5">
+                                <label for="collaborator_user_id" class="form-label">User</label>
+                                <select class="form-select" id="collaborator_user_id" name="collaborator_user_id" form="collaborator-form">
+                                    <?php foreach ($availableUsers as $user) : ?>
+                                        <option value="<?= (int) $user['id'] ?>"><?= esc($user['email']) ?></option>
+                                    <?php endforeach ?>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="collaborator_form_access" class="form-label">Form access</label>
+                                <select class="form-select" id="collaborator_form_access" name="form_access" form="collaborator-form">
+                                    <option value="none">None</option>
+                                    <option value="view">View</option>
+                                    <option value="edit">Edit</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="collaborator_submission_access" class="form-label">Results access</label>
+                                <select class="form-select" id="collaborator_submission_access" name="submission_access" form="collaborator-form">
+                                    <option value="none">None</option>
+                                    <option value="view">View</option>
+                                    <option value="export">Export</option>
+                                </select>
+                            </div>
+                            <div class="col-md-1 d-grid">
+                                <button type="submit" class="btn btn-outline-primary" form="collaborator-form" title="Save collaborator">
+                                    <i class="bi bi-plus-lg"></i>
+                                </button>
+                            </div>
+                        </div>
+                    <?php endif ?>
+
+                    <?php if (! empty($collaborators)) : ?>
+                        <div class="table-responsive mt-4">
+                            <table class="table table-sm align-middle mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>User</th>
+                                        <th>Form</th>
+                                        <th>Results</th>
+                                        <th class="text-end">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($collaborators as $collaborator) : ?>
+                                        <tr>
+                                            <td><?= esc($collaborator['email']) ?></td>
+                                            <td><span class="badge text-bg-light border"><?= esc($collaborator['form_access']) ?></span></td>
+                                            <td><span class="badge text-bg-light border"><?= esc($collaborator['submission_access']) ?></span></td>
+                                            <td class="text-end">
+                                                <form action="<?= site_url('forms/' . $form['id'] . '/collaborators/' . $collaborator['id'] . '/delete') ?>" method="post" class="d-inline" onsubmit="return confirm('Remove collaborator access?');">
+                                                    <?= csrf_field() ?>
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    <?php endif ?>
+                </div>
+            </div>
+
+            <form id="collaborator-form" action="<?= site_url('forms/' . $form['id'] . '/collaborators') ?>" method="post">
+                <?= csrf_field() ?>
+                <input type="hidden" name="user_id" value="">
+            </form>
+            <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                var form = document.getElementById('collaborator-form');
+                var userSelect = document.getElementById('collaborator_user_id');
+                if (!form || !userSelect) { return; }
+                form.addEventListener('submit', function () {
+                    form.querySelector('[name="user_id"]').value = userSelect.value;
+                });
+            });
+            </script>
+        <?php endif ?>
     </div>
 </div>
 

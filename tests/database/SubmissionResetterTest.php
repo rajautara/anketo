@@ -186,7 +186,7 @@ final class SubmissionResetterTest extends CIUnitTestCase
     {
         $forge = Database::forge();
 
-        foreach (['submission_data', 'form_submissions', 'form_fields', 'forms', 'auth_groups_users', 'users', 'settings'] as $table) {
+        foreach (['submission_data', 'form_submissions', 'form_fields', 'form_collaborators', 'forms', 'auth_groups_users', 'users', 'settings'] as $table) {
             $forge->dropTable($table, true);
         }
 
@@ -243,6 +243,21 @@ final class SubmissionResetterTest extends CIUnitTestCase
         $forge->addKey('id', true);
         $forge->addForeignKey('user_id', 'users', 'id', 'CASCADE', 'CASCADE');
         $forge->createTable('forms');
+
+        $forge->addField([
+            'id'                => ['type' => 'INTEGER', 'auto_increment' => true],
+            'form_id'           => ['type' => 'INTEGER'],
+            'user_id'           => ['type' => 'INTEGER'],
+            'form_access'       => ['type' => 'VARCHAR', 'constraint' => 10, 'default' => 'none'],
+            'submission_access' => ['type' => 'VARCHAR', 'constraint' => 10, 'default' => 'none'],
+            'created_at'        => ['type' => 'DATETIME', 'null' => true],
+            'updated_at'        => ['type' => 'DATETIME', 'null' => true],
+        ]);
+        $forge->addKey('id', true);
+        $forge->addUniqueKey(['form_id', 'user_id']);
+        $forge->addForeignKey('form_id', 'forms', 'id', 'CASCADE', 'CASCADE');
+        $forge->addForeignKey('user_id', 'users', 'id', 'CASCADE', 'CASCADE');
+        $forge->createTable('form_collaborators');
 
         $forge->addField([
             'id'               => ['type' => 'INTEGER', 'auto_increment' => true],

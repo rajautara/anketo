@@ -10,11 +10,12 @@ class DashboardController extends BaseController
     {
         $formModel = new FormModel();
 
-        $forms = $formModel->getForUser($this->currentUserId(), $this->isAdmin());
+        $forms = $formModel->getForUser($this->currentUserId());
+        $sharedForms = $formModel->getSharedForUser($this->currentUserId());
 
         return view('dashboard/index', [
-            'forms'   => $forms,
-            'isAdmin' => $this->isAdmin(),
+            'forms'       => $forms,
+            'sharedForms' => $sharedForms,
         ]);
     }
 }

@@ -33,6 +33,8 @@ $routes->group('', ['filter' => 'session'], static function ($routes) {
     $routes->get('forms/(:num)/builder', 'FormController::builder/$1');
     $routes->post('forms/(:num)/publish', 'FormController::publish/$1');
     $routes->post('forms/(:num)/unpublish', 'FormController::unpublish/$1');
+    $routes->post('forms/(:num)/collaborators', 'FormController::saveCollaborator/$1');
+    $routes->post('forms/(:num)/collaborators/(:num)/delete', 'FormController::deleteCollaborator/$1/$2');
 
     $routes->post('forms/(:num)/fields', 'FormFieldController::store/$1');
     $routes->post('forms/(:num)/paragraph-image', 'FormFieldController::uploadImage/$1');

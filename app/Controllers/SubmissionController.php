@@ -2,6 +2,7 @@
 
 namespace App\Controllers;
 
+use App\Libraries\FormAccess;
 use App\Libraries\SubmissionAnswerFormatter;
 use App\Libraries\SubmissionResetter;
 use App\Libraries\UploadPath;
@@ -31,7 +32,8 @@ class SubmissionController extends BaseController
 
     public function index(int $formId): string
     {
-        $form = $this->findFormOrFail($formId);
+        $form = $this->findFormOrFail($formId, FormAccess::SUBMISSION_VIEW);
+        $access = (new FormAccess())->permissions($form, $this->currentUserId());
         $submissionCount = $this->submissionModel->countForForm($form['id']);
 
         // Columns = the form's input fields (display-only types store no value).
@@ -66,12 +68,14 @@ class SubmissionController extends BaseController
             'fieldsByKey' => $fieldsByKey,
             'answerFormatter' => $this->answerFormatter,
             'pager'       => $this->submissionModel->pager,
+            'access'      => $access,
         ]);
     }
 
     public function show(int $formId, int $submissionId): string
     {
-        $form       = $this->findFormOrFail($formId);
+        $form       = $this->findFormOrFail($formId, FormAccess::SUBMISSION_VIEW);
+        $access     = (new FormAccess())->permissions($form, $this->currentUserId());
         $submission = $this->findSubmissionOrFail($form['id'], $submissionId);
         $answers    = $this->submissionDataModel->getForSubmission($submission['id']);
         $fieldsByKey = $this->fieldsByKey($this->fieldModel->getForForm($form['id']));
@@ -82,12 +86,13 @@ class SubmissionController extends BaseController
             'answers'    => $answers,
             'fieldsByKey' => $fieldsByKey,
             'answerFormatter' => $this->answerFormatter,
+            'access' => $access,
         ]);
     }
 
     public function export(int $formId): ResponseInterface
     {
-        $form = $this->findFormOrFail($formId);
+        $form = $this->findFormOrFail($formId, FormAccess::SUBMISSION_EXPORT);
 
         // Display-only fields (e.g. paragraph) store no answer — exclude them so
         // they don't produce empty CSV columns.
@@ -139,7 +144,7 @@ class SubmissionController extends BaseController
 
     public function reset(int $formId)
     {
-        $form = $this->findFormOrFail($formId);
+        $form = $this->findFormOrFail($formId, FormAccess::SUBMISSION_RESET);
 
         $result = (new SubmissionResetter())->resetForm($form['id']);
         $returnTo = $this->request->getPost('return_to') === 'dashboard'
@@ -170,7 +175,7 @@ class SubmissionController extends BaseController
 
     public function downloadFile(int $formId, int $submissionId, int $dataId)
     {
-        $form       = $this->findFormOrFail($formId);
+        $form       = $this->findFormOrFail($formId, FormAccess::SUBMISSION_VIEW);
         $submission = $this->findSubmissionOrFail($form['id'], $submissionId);
 
         $answer = $this->submissionDataModel->find($dataId);
@@ -210,7 +215,7 @@ class SubmissionController extends BaseController
         return $out;
     }
 
-    private function findFormOrFail(int $id): array
+    private function findFormOrFail(int $id, string $capability = FormAccess::SUBMISSION_VIEW): array
     {
         $form = $this->formModel->find($id);
 
@@ -218,7 +223,7 @@ class SubmissionController extends BaseController
             throw new PageNotFoundException('Form not found.');
         }
 
-        $this->ensureFormAccess($form);
+        $this->ensureFormAccess($form, $capability);
 
         return $form;
     }

@@ -3,6 +3,7 @@
 namespace App\Controllers;
 
 use App\Libraries\ConditionEvaluator;
+use App\Libraries\FormAccess;
 use App\Libraries\ProductList;
 use App\Libraries\UploadPath;
 use App\Libraries\ValueUpdateEvaluator;
@@ -212,7 +213,7 @@ class FormFieldController extends BaseController
             throw new PageNotFoundException('Form not found.');
         }
 
-        $this->ensureFormAccess($form);
+        $this->ensureFormAccess($form, FormAccess::FORM_EDIT);
 
         return $form;
     }
